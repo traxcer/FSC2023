@@ -20,33 +20,30 @@ Programador: Manuel Eloy Gutiérrez
 //powf(float x, float y); x elevado a la potencia y
 #include <stdlib.h>
 
-//prototipo
-int taylor_serie_geometrica(double *v, double x, int orden);
+//prototipos
+double taylor_serie_exp(double x, int orden);
+double factorial(double n);
 
 int main(){
-    double *v;
-    v=malloc(sizeof(double));
-    double x=-7.204568;
-    int r =taylor_serie_exp(x,4);
-    printf("Devuelve: %d\n",r); 
+    double r =taylor_serie_exp(-7.204568,4);
+    printf("Devuelve al final: %f\n",r); 
     return 0;
 }
 
-int taylor_serie_exp(double x, int orden){ 
-    *v=0;
+double taylor_serie_exp(double x, int orden){ 
+    double resultado=0;
     for (double i=0;i<(double)orden+1;i++){
-        printf("Orden %f: Potencia de x:%f elevado a y:%f es:%f ",i+1,x,i,pow(x,i));
-        
-        *v=*v+powf(x,i);
-        printf(" Suma acumulada:%f\n",*v);
+        printf("Orden %f: Valor ultimo sumando: %f / %f ",i,powf(x,i),factorial(i));
+        resultado=resultado+(powf(x,i)/factorial(i));
+        printf(" Suma acumulada:%f\n",resultado);
     }
-    return 0;
+    return resultado;
 }
 
-int factorial(double n){
+double factorial(double n){
     double fact= 0; 
     for (int c = 1; c <= n; c++){
-        fact = fact * c;
+        fact = fact * (double)c;
     }
     return fact;
 }
