@@ -41,7 +41,7 @@ double taylor_serie_exp(double x, int orden){
 }
 
 double factorial(double n){
-    double fact= 0; 
+    double fact= 1; 
     for (int c = 1; c <= n; c++){
         fact = fact * (double)c;
     }
