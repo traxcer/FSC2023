@@ -14,11 +14,11 @@ int main(){
     else
         printf("No se ha obtenido el valor esperado\n");
     
-    int a2[T]={201,77,62,87,42,202,176,-76,170,146,181,105,209,34,29,40,129,171,67,87,11};
-    int m2 = sumaMenores(5, a2, 21);
+    int a2[T]={153, 15, 168, 152, 46, 69, 142, 192, 84, 22, 132, 78, 0, 120, 114, 71, 135, 170, 56, 82, 17};
+    int m2 = sumaMenores(18, a2, 21);
         printf("Prueba 2:\n");
-    if (m2==-1)
-        printf("Se ha obtenido el valor esperado m=-1\n");
+    if (m2==1488)
+        printf("Se ha obtenido el valor esperado m=1488\n");
     else
         printf("No se ha obtenido el valor esperado\n");
 
@@ -52,7 +52,7 @@ int ordena (int matriz[T]){
     while (ya==1){
         ya=0;
         for (int i=0;i<T;i++){    
-            if (matriz[i]<1)
+            if (matriz[i]<0)
                 return -1;
             if (matriz[i] > matriz[i+1]){
                 ya=1;
