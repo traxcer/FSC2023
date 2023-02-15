@@ -1,0 +1,19 @@
+
+
+
+
+}
+}
+    f1();
+    printf ("Direcciones virtuales de las variables\n");
+    printf ("vg (variable global. dirección: %x\n",&vg);
+    printf ("vg (variable local. dirección: %x\n",&v1);
+    printf("f1 dirección: %x\n",f1);
+/* Pruebas de ubicación de la memoria*/
+#include <stdio.h>
+int main(){
+int v1=10;
+int vg;
+return 0;
+//variable global
+void f1(){
