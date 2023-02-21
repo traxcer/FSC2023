@@ -1,64 +1,70 @@
 /*
-Descripción:
-Función que toma como argumento un nombre de fichero, y tres 
-enteros pasados por dirección como argumentos de salida, y 
-cuente el número de caracteres en minusculas, mayúsculas y 
-digitos que aparecden en el fichero.
-
-Programador Manuel Eloy Gutiérrez
-Session 6 Programa 1
+Escriba una función en C que tome como argumento un nombre de fichero, 
+y tres enteros pasados por dirección como argumentos de salida, y cuente 
+el número de caracteres en minúscula, en mayúscula y dígitos que aparecen 
+en el fichero. La función debe tener el siguiente prototipo:
+       void contar(char * filename, int * minusculas, int * mayusculas, int * digitos);
+Implemente también el programa main necesario para probar su funcionamiento.
+Prueba 1: Compilación
+Prueba de funcionamiento
+Dada un fichero regular en disco llamado "datos.txt" con el siguiente contenido:
+           aAbBcCdD1233.;-fgh
+la función tenga devuelva los siguientes valores:
+           //llamada a la función
+           int minusculas, mayusculas, digitos;
+          contar("datos.txt", &minusculas, &mayusculas, &digitos);
+           //se espera que minusculas = 7; mayusculas = 4; digitos = 4;
+Nótese que este programa no espera salida alguna, y que las comprobaciones se realizarán con llamadas a función correspondiente, que deben tener el prototipo indicado.
 */
 
 #include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <stdlib.h>
+#include <unistd.h>
 #include <stdlib.h>
 
 #define T 255
+//Prototipos de funciones
+void contar(char * filename, int * minusculas, int * mayusculas, int * digitos);
 
-void contar(char *filename, int *minusculas, int *mayusculas, int *digitos);
-
-
-int main (int argc, char *argv[]){
+int main(int argc,char * argv[]){
     if (argc<2){
-        printf("Uso: %s <filename>", argv[1]);
+        printf("Atención: Debe usar %s nombfichero\n",argv[0]);
         return 0;
     }
-
-int *mayusculas, *minusculas, *digitos;
-//Inicia contadores
-*minusculas=0;
-*mayusculas=0;
-*digitos=0;
-
-    return (0);
+    int minusculas, mayusculas, digitos;
+    contar("datos.txt", &minusculas, &mayusculas, &digitos);
+    printf("Minusculas: %d\nMayusculas: %d\nDigitos: %d\n", minusculas, mayusculas, digitos);
 }
-
-void contar(char *filename, int *minusculas, int *mayusculas, int *digitos){
-    ssize_t fd, leidos;
-    char b[T];
-
     
-    if((fd=open(filename,O_RDONLY))==-1){
-        perror("open:");
-        exit (1);
+void contar(char * filename, int * minusculas, int * mayusculas, int * digitos){
+    char buf[T];
+    int fd, m=0, M=0, d=0; 
+    ssize_t leido;
+
+    if((fd=open(filename,O_RDONLY))<0){
+        perror("open");
+        exit(-1);
     }
-    leidos=read(fd,b,T);
-    while (leidos>0){
-        for (int i=0;i<leidos;i++){
-            if (b[i]>='a' && b[i]<='z')
-                *minusculas++;
-            if (b[i]>='A' && b[i]<='Z')
-                *mayusculas++;
-            if (b[i]>='0' && b[i]<='9')
-                *digitos++;
+    while((leido = read(fd,buf,T))>0){ //bucle de lectura y contabilizacion
+        
+        for (int i=0;i<leido;i++){
+            if ((buf[i]>='a') && (buf[i]<='z')) m++;
+            if ((buf[i]>='A') && (buf[i]<='Z')) M++;
+            if ((buf[i]>='0') && (buf[i]<='9')) d++;
         }
-        leidos=read(fd,b,T);
     }
-    if (leidos<0){ //Error de llamada al sistema
-        perror("read:");
-        exit (1);
+    if (leido==-1){ //Error leyendo
+            perror("read");
+            exit(-1);
+        }
+    if (close(fd)<0){ // Leido completo, cierra
+        perror("close");
+        exit(-1);
     }
+    *minusculas=m;
+    *mayusculas=M;
+    *digitos=d;   
 }
