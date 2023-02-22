@@ -19,11 +19,10 @@ struct Estructura{
     char c;
 };
 
-
 int main(int argc, char *argv[]){
 
     int fd, escritos, tamanio;
-    int b[T];
+    char buffer[T];
     
 //Control argumentos
     if (argc<2){
@@ -39,34 +38,36 @@ int main(int argc, char *argv[]){
 
 //Apertura y grabación de datos en el fichero
 
-    fd=open(argv[1],O_CREAT | O_TRUNC | O_WRONLY, 644);
+    fd=open(argv[1],O_CREAT | O_TRUNC | O_WRONLY, 0644);
     if (fd<0){
         perror("open");
         exit (1);
     }
 //Genero un buffer b, compacto.
-    memcpy(b,&x,sizeof(int));
+    memcpy(buffer,&x,sizeof(int));
     tamanio=sizeof(int);
-    printf("Ocupando...:%d\n",tamanio);
-    
-    memcpy(b+sizeof(int),array_enteros,sizeof(4*sizeof(int)));
+    buffer[tamanio]='\0';
+    printf("buffer: %s, x ocupa(%d)..acumulado:%d\n",buffer,(int)sizeof(int),tamanio);
+
+    memcpy(buffer+sizeof(int),array_enteros,sizeof(int)*4);
     tamanio+=(4*sizeof(int));
-    printf("Ocupando...:%d\n",tamanio);
+    buffer[tamanio]='\0';
+    printf("buffer: %s, array_enteros ocupa(%d)..acumulado:%d\n",buffer,(int)sizeof(int)*4,tamanio);
     
-    memcpy(b+sizeof(int)+sizeof(int)*4,&es.a,sizeof(es.a));
-    tamanio+=sizeof(es.a);
-    printf("Ocupando...:%d\n",tamanio);
+    memcpy(buffer+sizeof(int)+sizeof(int)*4,&es.a,(int)sizeof(es.a));
+    tamanio+=(int)sizeof(es.a);
+    printf("es.a ocupa(%ld)..acumulado:%d\n",sizeof(es.a),tamanio);
     
-    memcpy(b+sizeof(int)+sizeof(int)*4+sizeof(es.a),&es.b,sizeof(es.b));
+    memcpy(buffer+sizeof(int)+sizeof(int)*4+sizeof(es.a),&es.b,sizeof(es.b));
     tamanio+=sizeof(es.b);
-    printf("Ocupando...:%d\n",tamanio);
+    printf("es.b ocupa(%ld)..acumulado:%d\n",sizeof(es.b),tamanio);
     
-    memcpy(b+sizeof(int)+sizeof(int)*4+sizeof(es.a+sizeof(es.b)),&es.c,sizeof(es.c));
+    memcpy(buffer+sizeof(int)+sizeof(int)*4+sizeof(es.a+sizeof(es.b)),&es.c,sizeof(es.c));
     tamanio+=sizeof(es.c);
-    printf("Ocupando...:%d\n",tamanio);
+    printf("es.a ocupa(%ld)..acumulado:%d\n",sizeof(es.c),tamanio);
 
 //grabacion
-    if((escritos=write(fd,b,tamanio))<0){
+    if((escritos=write(fd,buffer,tamanio))<0){
         perror("write");
         exit (1);
     }
@@ -74,7 +75,11 @@ int main(int argc, char *argv[]){
         perror("close");
         exit(1);
     }
+    buffer[tamanio]='\0';
+    printf("grabado en formato char : %s\n",buffer);
     printf("Grabados correctamente (bytess): %d\n",tamanio);
+    
+
     return 0;
 }
 
