@@ -53,7 +53,7 @@ int main(int argc,char * argv[]) {
 		escribe= write(fd,array_enteros, 4*sizeof(int));
 	} while(escribe< 4*((ssize_t)sizeof(int)));
 
-/* En ejercicio de otro añi lo tengo así
+/* 
 if write(fd,&est,sizeof(est)!=sizeof(est))
 	{
 	perror("Error en la escritura de la estructura");
