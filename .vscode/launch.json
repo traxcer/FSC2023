@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/tema_2/practica_1/p3/a.out",
             "args": ["datos.txt"],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/tema_2/practica_1/p3/",
+            "cwd": "${workspaceFolder}/tema_2/practica_1/p3",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
