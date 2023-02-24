@@ -46,8 +46,6 @@ int main(int argc, char *argv[]){
 //Genero un buffer b, compacto.
     memcpy(buffer,&x,sizeof(int));
     tamanio=sizeof(int);
-    buffer[tamanio]='\0';
-    printf("buffer: %s, x ocupa(%d)..acumulado:%d\n",buffer,(int)sizeof(int),tamanio);
 
     memcpy(buffer+sizeof(int),array_enteros,sizeof(int)*4);
     tamanio+=(4*sizeof(int));
