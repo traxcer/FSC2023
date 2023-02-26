@@ -65,11 +65,8 @@ int main(int argc, char *argv[]){
         perror("close");
         exit(1);
     }
-    buffer[tamanio+1]='\0';
-    printf("grabado en formato char : %s\n",buffer);
-    printf("Grabados correctamente (bytess): %d\n",tamanio);
-    
+    printf("Grabados correctamente (bytes): %d\n",tamanio);
 
-    return 0;
+return 0;
 }
 
