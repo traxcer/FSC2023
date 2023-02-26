@@ -41,7 +41,7 @@ int main(int argc,char * argv[]) {
 	}
 	int fd;
 	ssize_t leer;
-    int x;
+    int x, tamanio;
 	int array_enteros[4];
 	struct Estructura est;
     char buffer[T];
@@ -61,22 +61,21 @@ int main(int argc,char * argv[]) {
         perror("close");
         exit(1);
     }
-	buffer[T]='\0';
-	printf("El buffer leido (leido=%ld) es: %s\n",leer,buffer);
     
 	//volcamos en la variablers lo leido en el buffer
     memcpy(&x,buffer,sizeof(int));
-
-    memcpy(array_enteros,buffer+sizeof(int),sizeof(int)*4);
-
-    memcpy(&est.a,buffer+sizeof(int)+sizeof(int)*4,sizeof(est.a));
-    
-    memcpy(&est,buffer+sizeof(int)+sizeof(int)*4+sizeof(est.a),sizeof(est.b));
-    
-    memcpy(&est,buffer+sizeof(int)+sizeof(int)*4+sizeof(est.a)+sizeof(est.b),sizeof(est.c));
+	tamanio=sizeof(int);
+    memcpy(array_enteros,buffer+tamanio,sizeof(int)*4);
+	tamanio+=sizeof(int)*4;
+    memcpy(&est.a,buffer+tamanio,sizeof(est.a));
+	tamanio+=sizeof(est.a);
+    memcpy(&est.b,buffer+tamanio,sizeof(est.b));
+	tamanio+=sizeof(est.b);
+    memcpy(&est.c,buffer+tamanio,sizeof(est.c));
 
     printf("El valor leido de x: %d\n",x);
-    printf("El valor leido de array_enteros: %d %u %d %d\n",array_enteros[0],array_enteros[1],array_enteros[2],array_enteros[3]);
+    printf("El valor leido de array_enteros: %d %d %d %d\n",array_enteros[0],array_enteros[1],array_enteros[2],array_enteros[3]);
+	printf("El valor leido de la estructura:\n  a:= %d\n  b:= %f\n  c:= %c\n",est.a, est.b, est.c);
 	
   
     

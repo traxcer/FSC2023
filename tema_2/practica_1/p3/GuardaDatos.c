@@ -20,8 +20,8 @@ struct Estructura{
 };
 
 int main(int argc, char *argv[]){
-
-    int fd, escritos, tamanio;
+    ssize_t fd;
+    int escritos, tamanio;
     char buffer[T];
     
 //Control argumentos
@@ -33,36 +33,28 @@ int main(int argc, char *argv[]){
 //Datos
     int x = 7;
     int array_enteros[4]={0x00, 0x01, 0x02, 0x03};
-    struct Estructura es;
-    es.a = 1; es.b = 2.0; es.c = '3';
+    struct Estructura est;
+    est.a = 1; est.b = 2.0; est.c = '3';
 
-//Apertura y grabación de datos en el fichero
-
+//Apertura, si o existe lo crea y si existe lo trunca, y preprepara para escribir
     fd=open(argv[1],O_CREAT | O_TRUNC | O_WRONLY, 0644);
     if (fd<0){
         perror("open");
         exit (1);
     }
-//Genero un buffer b, compacto.
-    memcpy(buffer,&x,sizeof(int));
-    tamanio=sizeof(int);
 
-    memcpy(buffer+sizeof(int),array_enteros,sizeof(int)*4);
-    tamanio+=(4*sizeof(int));
-    buffer[tamanio]='\0';
-    printf("buffer: %s, array_enteros ocupa(%d)..acumulado:%d\n",buffer,(int)sizeof(int)*4,tamanio);
-    
-    memcpy(buffer+sizeof(int)+sizeof(int)*4,&es.a,(int)sizeof(es.a));
-    tamanio+=(int)sizeof(es.a);
-    printf("es.a ocupa(%ld)..acumulado:%d\n",sizeof(es.a),tamanio);
-    
-    memcpy(buffer+sizeof(int)+sizeof(int)*4+sizeof(es.a),&es.b,sizeof(es.b));
-    tamanio+=sizeof(es.b);
-    printf("es.b ocupa(%ld)..acumulado:%d\n",sizeof(es.b),tamanio);
-    
-    memcpy(buffer+sizeof(int)+sizeof(int)*4+sizeof(es.a+sizeof(es.b)),&es.c,sizeof(es.c));
-    tamanio+=sizeof(es.c);
-    printf("es.a ocupa(%ld)..acumulado:%d\n",sizeof(es.c),tamanio);
+//Genero un buffer, compacto, para escribir en el fichero.
+    //Grabo el contenido de memoria ocupada por cada dato
+    memcpy(buffer,&x,sizeof(int));
+    tamanio=sizeof(int); //para acumular el tamaño de lo usado en el buffer
+    memcpy(buffer+tamanio,array_enteros,sizeof(int)*4);
+    tamanio+=(sizeof(int)*4);  
+    memcpy(buffer+tamanio,&est.a,sizeof(est.a));
+    tamanio+=sizeof(est.a);    
+    memcpy(buffer+tamanio,&est.b,sizeof(est.b));
+    tamanio+=sizeof(est.b);  
+    memcpy(buffer+tamanio,&est.c,sizeof(est.c));
+    tamanio+=sizeof(est.c);
 
 //grabacion
     if((escritos=write(fd,buffer,tamanio))<0){
@@ -73,7 +65,7 @@ int main(int argc, char *argv[]){
         perror("close");
         exit(1);
     }
-    buffer[tamanio]='\0';
+    buffer[tamanio+1]='\0';
     printf("grabado en formato char : %s\n",buffer);
     printf("Grabados correctamente (bytess): %d\n",tamanio);
     
