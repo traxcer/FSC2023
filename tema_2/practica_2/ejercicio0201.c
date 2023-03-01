@@ -1,6 +1,6 @@
 /* Compila con -ansi y sin éster flag y observa el comportamiento 
    de los procesos!
-    AÑADIR codigo en los puntos 1, 2 y 3
+AÑADIR codigo en los puntos 1, 2 y 3
 NOTA: cuando se compila en ansi, los comentarios // no los acepta,
 hay que ponerlos entre barra-asterisco  asterisco-barra
 */
