@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             //"program": "${workspaceFolder}/${fileBasenameNoExtension}",
-            "program": "${workspaceFolder}/tema_2/practica_1/p3/${fileBasenameNoExtension}",
+            "program": "${workspaceFolder}/tema_2/practica_2/${fileBasenameNoExtension}",
             "args": ["datos.txt"],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
