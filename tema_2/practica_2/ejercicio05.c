@@ -21,3 +21,14 @@ read() devuelve -1 y el tipo de error es EINTR se puede volver a llamar
 a read(). Vuelve a implementar el programa del ejercicio para que 
 realice este nuevo comportamiento. 
 */
+#include <stdio.h>
+
+#define T 255
+
+
+int main(){
+    char b[T];
+    int leido=read(0,b,T);
+
+return 0;
+}
