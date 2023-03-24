@@ -1,0 +1,83 @@
+/*
+Realice una variación del ejercicio anterior donde esta vez el hijo 
+será el que ponga fin a los dos procesos cuando alcance la cuenta de 
+X caracteres leídos por la  pipe  (este  valor  se  puede  obtener  
+como  argumento  al  programa).  En  esta ocasión, se creará una 
+pipe adicional para que el hijo le pueda transmitir al padre si éste 
+debe continuar leyendo mensajes del usuario por teclado o debe 
+finalizar.  
+*/
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/wait.h>
+
+#define T 50
+
+int main(){
+/* Preparo las pipe para canalizar la comunicación (ph)PADRE -> HIJO 
+    y la comunicación inversa (hp)HIJO -> PADRE */
+    int ph[2], hp[2]; /**/
+    if ((pipe(ph))<0){
+        perror("pipe ph");
+        exit(1);
+    }
+    if ((pipe(hp))<0){
+        perror("pipe hp");
+        exit(1);
+    }
+
+    pid_t pid;
+    if((pid=fork())<0){
+        perror("fork");
+        exit(1);
+    } else if (pid==0){ /* Proceso HIJO*/
+    if((close (p[1]))<0){
+        perror("Close Escritura Hijo");
+        exit(1);
+    }
+    char mensaje[T];
+    int leidos;
+    leidos=read(p[0],mensaje,T);
+    do{
+    //write (1,"Mensaje leido (HIJO):\n",23);
+    write(1,mensaje,leidos);
+    } while ((leidos=read(p[0],mensaje,T))>0);
+    if (leidos<0){
+        perror("leidos");
+        exit(1);
+    }
+    exit(1); /* Termina el hijo */
+    
+    } else { /* Proceso PADRE */
+    if((close (p[0]))<0){
+        perror("Close Lectura Padre");
+        exit(1);
+    }
+    char mensaje[T];
+    int teclado;
+        do{
+            //write (1,"Introduce un Mensaje (PADRE):\n",31);
+            if((teclado=read(0,&mensaje,T))<0){
+                perror("read teclado");
+                exit(1);
+            }
+        /* Escribe en tuberia el MSG*/
+        if ((write(p[1],mensaje,teclado))<0){
+            perror("write del padre en pipe");
+            exit(1);
+        }
+        mensaje[teclado-1]='\0';
+        } while (strcmp(mensaje,"fin")!=0);
+
+        if((close (p[1]))<0){
+            perror("Close Escritura del Padre");
+            exit(1);
+        }   
+    wait(NULL); /* Espera al hijo */
+    }
+
+}

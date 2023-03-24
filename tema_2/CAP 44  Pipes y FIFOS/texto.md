@@ -32,6 +32,7 @@ Al escribir bloques de datos de más de PIPE_BUF bytes en una tubería, el núcl
 escrito en la tubería.) Cuando solo hay un proceso que escribe en una tubería (lo habitual caso), esto no importa. Sin embargo, si hay varios procesos de escritura, entonces las escrituras de bloques grandes pueden dividirse en segmentos de tamaño arbitrario (que pueden ser menor que PIPE_BUF bytes) e intercalado con escrituras de otros procesos.
 
 
+
 ## Creando y usando pipes
 
 La llamada al sistema *pipe()* creará una pipe.
@@ -88,4 +89,14 @@ Por ejemplo, el read() puede ser interrumpido por un controlador de señal que e
     Indicador SA_RESTART (Sección 21.5). El comportamiento en el caso de SIGPIPE es diferente porque no tiene sentido reiniciar automáticamente el write() o simplemente indicar que write() fue interrumpida por un controlador (lo que implica que el write() podría reiniciarse manualmente de manera útil). En ninguno de los dos casos puede El intento de write() tiene éxito, porque la tubería aún estará rota.
 
 Si el proceso de escritura no cierra el extremo de lectura de la canalización, incluso después de la otro proceso cierra el extremo de lectura de la tubería, el proceso de escritura aún podrá escribir en la tubería. Eventualmente, el proceso de escritura llenará la tubería, y otro intento de escribir se bloqueará indefinidamente. Una razón final para cerrar los descriptores de archivos no utilizados es que solo después de que todos los archivos los descriptores en todos los procesos que se refieren a una tubería están cerrados que la tubería se destruye y sus recursos liberados para su reutilización por otros procesos. En este punto, cualquier no leído los datos en la tubería se pierden.
+
+## Pipes como método de sincronización de procesos
+
+Se pueden usar tuberías para evitat condiciones de carrera. 
+Para realizar la sincronización, el padre construye una tubería q antes de crear el procesos secundarios. Cada hijo hereda un descriptor de archivo para el extremo de escritura de la canalización
+y cierra este descriptor una vez que ha completado su acción. 
+Después que todos los hijos han cerrado sus descriptores de archivo para el extremo de escritura de la canalización, el padre
+read() t de la canalización se completará, devolviendo el final del archivo (0). En este punto, el padre es libre de seguir haciendo otro trabajo. (Tenga en cuenta que cerrar el final de escritura no utilizado
+de la tubería en la matriz r es fundamental para el correcto funcionamiento de esta técnica;
+de lo contrario, el padre se bloquearía para siempre al intentar leer desde la tubería).
 
