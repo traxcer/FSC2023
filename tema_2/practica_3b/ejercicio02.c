@@ -16,7 +16,7 @@ finalizar.
 #include <sys/wait.h>
 #include <errno.h>
 
-#define T 50
+#define T 255
 
 /* Prototipos */
 int read_n(int fd,void *b, int n);
