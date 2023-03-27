@@ -16,7 +16,11 @@ finalizar.
 #include <sys/wait.h>
 #include <errno.h>
 
+<<<<<<< HEAD
 #define T 8
+=======
+#define T 255
+>>>>>>> f0b8ffef5556a28ee9c12ad04e23901b5ea66893
 
 /* Prototipos */
 int read_n(int fd,void *b, int n);
