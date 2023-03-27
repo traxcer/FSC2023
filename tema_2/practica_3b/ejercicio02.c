@@ -16,7 +16,7 @@ finalizar.
 #include <sys/wait.h>
 #include <errno.h>
 
-#define T 50
+#define T 8
 
 /* Prototipos */
 int read_n(int fd,void *b, int n);
@@ -55,7 +55,7 @@ if (argc<2){
         exit(1);
     }
     char mensaje[T];
-    char texto[T];
+    char texto[T+25];
     int leidos;
     leidos=read(ph[0],mensaje,T);
     do{
@@ -94,7 +94,7 @@ if (argc<2){
         exit(1);
     }
     char mensaje[T];
-    char msg[T];
+    char msg[T+25];
     int teclado;
     char msgctr='y';
         do{
