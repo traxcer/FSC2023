@@ -17,15 +17,20 @@ Ejemplo SEÑALES COMO EVENTOS
 #define E_USR2 1
 #define E_INT 2
 
-int p[2];
-
 /*Prototipo de funciones*/
+int write_n(int fd,void *buffer, int tamanio);
 int espera_evento();
 int read_n(int fd,void *buffer, int tamanio);
 
+/*Descriptor global para la pipe*/
+int p[2];
+
+void m2(int signo);
+void m3(int signo);
+
 void m1(int signo){
     int evento=E_USR1;
-    if(write(p[1],&evento,sizeof(int))!= sizeof(int)){
+    if(write_n(p[1],&evento,sizeof(int))!= sizeof(int)){
         perror("write e_usr1");
         exit(1);
     }
@@ -33,7 +38,7 @@ void m1(int signo){
 }
 void m2(int signo){
     int evento=E_USR2;
-    if(write(p[1],&evento,sizeof(int))!= sizeof(int)){
+    if(write_n(p[1],&evento,sizeof(int))!= sizeof(int)){
         perror("write e_usr2");
         exit(1);
     }
@@ -41,7 +46,7 @@ void m2(int signo){
 }
 void m3(int signo){
     int evento=E_INT;
-    if(write(p[1],&evento,sizeof(int))!= sizeof(int)){
+    if(write_n(p[1],&evento,sizeof(int))!= sizeof(int)){
         perror("write e_int");
         exit(1);
     }
@@ -59,6 +64,9 @@ int espera_evento(){
     }
     return evento;
 }
+/*=================================================================
+  PROGRAMA PRINCIPAL
+  =================================================================*/
 
 int main(int argc, char *argv[]){
     /* Armo los manejadores de las señales a controlar */
@@ -124,7 +132,7 @@ int main(int argc, char *argv[]){
                         estado=E2;
                     break;
                     case E_INT:
-                        printf("Saliendo de la Maquina");
+                        printf("Saliendo de la Maquina\n");
                         fin=1;
                     break;
                     default:
@@ -146,11 +154,9 @@ int main(int argc, char *argv[]){
 /* Funciones auxiliares                                                          */
 /*===============================================================================*/
 int read_n(int fd,void *buffer, int tamanio){
-
     int a_leer=tamanio;
     int t_leido=0;
     int leido;
-
     do{
     errno=0;
     leido=read(fd, buffer+t_leido, a_leer);
@@ -160,9 +166,27 @@ int read_n(int fd,void *buffer, int tamanio){
         }
     } while (((leido>0) && (t_leido<tamanio)) || errno == EINTR);
 
-    if (t_leido>0){
+    if (t_leido>0)
         return t_leido;
-    } else {
+    else 
         return leido;
-    }
+}
+
+int write_n(int fd,void *buffer, int tamanio){
+    int a_escribir=tamanio;
+    int t_escrito=0;
+    int escrito;
+    do{
+    errno=0;
+    escrito=write(fd, buffer+t_escrito, a_escribir);
+        if (escrito>=0){
+            a_escribir-=escrito;
+            t_escrito+=escrito;
+        }
+    } while (((escrito>0) && (t_escrito<tamanio)) || errno == EINTR);
+
+    if (t_escrito>0)
+        return t_escrito;
+    else 
+        return escrito;   
 }
