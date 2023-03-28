@@ -19,15 +19,9 @@ Ejemplo SEÑALES COMO EVENTOS
 
 int p[2];
 
-int espera_Evento();
+/*Prototipo de funciones*/
+int espera_evento();
 int read_n(int fd,void *buffer, int tamanio);
-
-/* variable global para almacenar la señal recibida
-    se asigna en los manejadose, pero perderiamos señales
-    por tanto es mejor usar una pipe para encolar las
-    señales (hecho en la version 2)
-*/
-int evento_recibido;
 
 void m1(int signo){
     int evento=E_USR1;
@@ -43,7 +37,7 @@ void m2(int signo){
         perror("write e_usr2");
         exit(1);
     }
-    signal(SIGUSR1,m2);
+    signal(SIGUSR2,m2);
 }
 void m3(int signo){
     int evento=E_INT;
@@ -51,8 +45,6 @@ void m3(int signo){
         perror("write e_int");
         exit(1);
     }
-    evento_recibido=E_INT;
-    // signal(SIGUSR1,m1); no es necesario, salimos de la maquina
 }
 
 /*=====================================================
@@ -61,7 +53,6 @@ void m3(int signo){
 int espera_evento(){
     int evento;
     //si no uso read_n voy a tener problemas
-    //if (read(p[0],&evento,sizeof(int))!= sizeof(int)){
     if (read_n(p[0],&evento,sizeof(int))!= sizeof(int)){ //lee evento de la pipe
         perror("read evento");
         exit(1);
@@ -93,12 +84,14 @@ int main(int argc, char *argv[]){
     printf("PID (%d) de mi programa\n",getpid());
 
     int estado=E1; //Estado inicial
+    char *estados[]={"E1","E2","fin"};
+    char *eventos[]={"SIGUSR1","SIGUSR2","SIGINT"};
     int fin=0; //condición del buble principal
 
     while(fin==0){
-        printf("Esperando evento en estado %d\n", estado);
+        printf("Esperando evento en estado %s\n", estados[estado]);
         int evento= espera_evento();
-        printf("Evento: %d\n", evento);
+        printf("Evento: %s\n", eventos[evento]);
 
         switch (estado){
             case E1:
@@ -127,7 +120,7 @@ int main(int argc, char *argv[]){
                         estado=E1;
                     break;
                     case E_USR2:
-                    printf("Transito de E1 a E2\n");
+                        printf("Reentrada a E2\n");
                         estado=E2;
                     break;
                     case E_INT:
