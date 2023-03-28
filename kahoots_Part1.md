@@ -205,16 +205,55 @@
         exit(-1);
     } else if(pid==0){
         v++;
-        printf("v=%d ", v);
-    } else {
-        v--;
-        printf("v=%d",v);
-    }
-    v+=10;
     printf("v= %d\n",v);
     return 0;
   }
   ```
   Mostrará: v=4 v= 14
 ---
+- ¿Cuál es el número correcto de llamadas a las funciones exit() y wait(), y su ubicación en el código, para un salida ordenada?
+  ```
+  int main(int argc, char *argv[]){
+    if(fork()>0){
+      /* hacer algo, linea 14 */
+    } else {
+      if (fork()>0){
+        /* hacer algo, linea 18 */
+      } else {
+        /* hacer algo, linea 21 */
+      }
+    /* linea 23 */
+    }
+  return 0;
+  }
+  ```
+  Mostrará: Linea 14 y 18 wait(), Linea 21 y 23 exit()
+---
+## Preguntas sobre: señales, alarm()
+---
+- Asumiendo que el código se compila con la opción -std=c99, ¿Qué se muestra por pantalla si el usuario escribe "abc" (sin comillas) a los dos segundos del comienzo
+  ```
+  void m(int signo){
+    write(1,"Alarma! ", 8);
+    signal(SIGALRM, m);
+  }
+  
+  int main(int argc, char *argv[]){
+    signal(SIGALRM, m);
+    alarm(1);
+    char b[T]="1234";
+    int leidos = read(0,b,T);
+    b[leidos-1]='\0';
+    printf("b= %s (%d)\n", b, leidos);
+    return 0;
+  }
+  ```
+  Mostrará: Alarma!1234(-1)
 
+  Devuelve -1 pues saltó la alarma al segundo 1 (señal), mientras esperaba en el read a que se introdujeran datos por teclado.
+---
+- La función read_n(fd,b,T), devuelve -1 cuando...
+
+
+  Devuelve -1 cuando hay un error de lectura en fd.
+---
