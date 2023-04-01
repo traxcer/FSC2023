@@ -19,7 +19,7 @@ finalizar.
 #define T 8
 
 /* Prototipos */
-int read_n(int fd,void *b, int n);
+int read_n(int fd,char *b, int n);
 
 /* Función principal */
 int main(int argc, char *argv[]){
@@ -131,7 +131,7 @@ return 0; /* Fin del main() */
 
 
 /* Funciones Auxiliares */
-int read_n(int fd,void *b, int n){
+int read_n(int fd,char *b, int n){
     int a_leer=n;
     int t_leido=0;
     int leido;
