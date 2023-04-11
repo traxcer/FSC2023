@@ -5,12 +5,12 @@
 
 /* Constantes: Estados y Eventos */
 
-#define E1 1
-#define E2 2
-#define E3 3
+#define E1 0
+#define E2 1
+#define E3 2
 
-#define EV_SIGUSR1 1
-#define EV_SIGUSR2 2
+#define EV_SIGUSR1 0
+#define EV_SIGUSR2 1
 
 int evento_recibido; //Variable global
 
@@ -27,11 +27,11 @@ void espera_evento(){
 void m1(int signo){
     signal (SIGUSR1, m1);
     evento_recibido=EV_SIGUSR1;
-    write(1,"Evento SIGUSR1 recibido\n",25);
+    write(1,"Evento SIGUSR1 recibido\n",24);
 }
 void m2(int signo){
     signal (SIGUSR2, m2);
-    write(1,"Evento SIGUSR2 recibido\n",25);
+    write(1,"Evento SIGUSR2 recibido\n",24);
     evento_recibido=EV_SIGUSR2;
     
 }
@@ -44,23 +44,25 @@ int main(){
     signal (SIGUSR2, m2);
     int contador=0;
     printf("PID Programa (%d)\n",getpid());
-    while (fin==0){
-        if (contador==3) 
-            estado=E3;
+    printf("Estado Inicial: %s\n",strestado[estado]);
+
+    while (fin==0){ //Bucle principal
+        printf("Estado: %s\n",strestado[estado]);
         espera_evento();
             switch (estado)
             {
             case E1:
                 switch (evento_recibido)
                 {
-                    case EV_SIGUSR1:
-                        printf("Transición de Estado %s -> a Estado %s",strestado[E1],strestado[E1]);
+                    case EV_SIGUSR1:                        
+                        printf("Estado: %s", strestado[estado]);
                         estado=E1;
+                        printf("-> Estado %s\n",strestado[estado]);
                     break;
                     
                     case EV_SIGUSR2:
-                    printf("Transición de Estado %s -> a Estado %s",strestado[E1],strestado[E2]);
                         estado=E2;
+                        printf("Transición de Estado %s -> a Estado %s\n",strestado[E1],strestado[estado]);
                     break;
                 
                 default:
@@ -73,13 +75,17 @@ int main(){
                     case EV_SIGUSR1:
                         estado=E1;
                         contador=0;
-                        printf("Transición de Estado %s -> a Estado %s (Contador:%d)",strestado[E2],strestado[E1],contador);
+                        printf("Transición de Estado %s -> a Estado %s (Contador:%d)\n",strestado[E2],strestado[estado],contador);
                     break;
                     
                     case EV_SIGUSR2:
                         estado=E2;
                         contador++;
-                        printf("Transición de Estado %s -> a Estado %s (Contador:%d)",strestado[E2],strestado[E2],contador);
+                        printf("Transición de Estado %s -> a Estado %s (Contador:%d)\n",strestado[E2],strestado[estado],contador);
+                        if (contador>2){
+                            contador=0;
+                            estado=E3;
+                        }
                     break;
                 
                 default:
@@ -91,12 +97,12 @@ int main(){
                 {
                     case EV_SIGUSR1:
                         estado=E1;
-                        printf("Transición de Estado %s -> a Estado %s",strestado[E3],strestado[E1]);
+                        printf("Transición de Estado %s -> a Estado %s\n",strestado[E3],strestado[estado]);
                     break;
                     
                     case EV_SIGUSR2:
                         estado=E1;
-                        printf("Transición de Estado %s -> a Estado %s",strestado[E3],strestado[E1]);
+                        printf("Transición de Estado %s -> a Estado %s\n",strestado[E3],strestado[estado]);
                     break;               
                 default:
                     break;
