@@ -1,0 +1,40 @@
+Notas sobre Select
+
+int select(int maxfds_mas_uno,
+        fd_set*rfd,
+        fd_set*wfd,
+        fd_set*efd,
+        structtimeval*timeout);
+        
+Descripción:
+•maxfds: el valor más alto de entre los descriptores a 
+analizar más uno (+1)
+•rfd: dirección del conjunto de descriptores que se 
+chequean para ver si están preparados para ser leídos, 
+incluido si están cerrados (en cuyo caso la lectura no 
+bloquea y devuelve 0)
+•wfd: dirección del conjunto de descriptores que se 
+chequean para ver su disponibilidad de escritura
+•efd: dirección del conjunto de descriptores que se 
+chequean para ver si surge alguna condición excepcional. 
+Por ejemplo, los datos URGENTES en un socket
+•timeout: dirección del tiempo de espera antes de acabar, 
+en caso de no haber ningún descriptor preparado (si vale 
+NULL) la espera es infinita hasta que algún descriptor 
+esté listo
+•Devuelve: el número de descriptores listos, 0 si ha 
+saltado el temporizador o -1 si hubo error
+
+Para el maxfds hacer una función:
+maxfds = max(fd,maxfds);
+
+
+Es importante saber que select() modifica los conjuntos 
+que se le pasan como argumentos
+Cada vez que se llama a select() NO interesa hacerlo con 
+los conjuntos originales, por lo que se deben hacer copias 
+de los mismos si se vuelve a select() en un bucleo
+Las copias modificadas de conjuntos de descriptores 
+devueltas por select() son las que se chequean con la macro
+FD_ISSET
+
