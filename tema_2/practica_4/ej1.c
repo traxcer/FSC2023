@@ -12,16 +12,20 @@ Málaga a 12 de Abril del 2023
 */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/select.h>
 
+#define MAXBUFFSIZE 2048
+
 /* Prototipos */
-int max(fd,maxfds);
+int max(int fd,int maxfds);
 void copia_fdset(fd_set *dst, fd_set *origen, int maxfd_mas_uno);
 /* Funciones auxilares */
-int max(fd,maxfds){
+int max(int fd,int maxfds){
     if (fd>maxfds)
         return fd;
     else
@@ -32,53 +36,45 @@ void copia_fdset(fd_set *dst, fd_set *origen, int maxfd_mas_uno){
     for (int i=0;i <maxfd_mas_uno;i++){
         if(FD_ISSET(i,origen))
             FD_SET(i,dst);
-    }
+        }
 }
 
 int main(){
+    printf("Comenzamos...\n");
+    char buffer[MAXBUFFSIZE];
     int fd;
-    if ((fd=open("tmp/fsc_chat",O_RDONLY))<0){
+    if ((fd=open("fifo1",O_RDONLY))<0){
         perror("open fifo");
         exit(-1);
     }
-    fd_set rfds,activo_rdfs;
-    struct timeval tv;
-    int retorno;
+    
+    fd_set rfds,activo_rfds;
+    int r;
+    struct timeval t;
 
-    /* Mira stdin (fd 0) para ver si hay datos del teclado. */
-    FD_ZERO(&rfds);
-    FD_SET(0, &rfds);
-    int maxfds=0; //Descriptor ya abierto de lectura teclado
+    FD_ZERO(&rfds); //limpia, pone todo a 0
+    FD_SET(0,&rfds);
     FD_SET(fd, &rfds);
-    maxfds=max(fd,maxfds);
-    /* Espera hasta 3 segundos.*/
-    tv.tv_sec = 3;
-    tv.tv_usec = 0;
+    int maximo = 0 > fd ? 0:fd;
+    
+    printf ("maxfds: %d\n",maximo);
     while(1){
-    copia_fdset(&activo_rdfs,&rfds,maxfds+1);
-    retorno = select(maxfds+1, &activo_rdfs, NULL, NULL, &tv);
-        if (retorno == -1){
-            perror("select()");
-            if (close(fd)<0){
-                perror("close");
-                exit(-1);
-            }
-            exit(-1);
+        t.tv_sec=1; //Ajusta el timer
+        t.tv_usec=0;
+        copia_fdset (&activo_rfds, &rfds, maximo+1);
+        
+        if((r= select(maximo+1,&activo_rfds, NULL, NULL, &t))<0){
+            perror("select");
+            close (fd); exit(-1);
         }
-        const int MAXBUFFSIZE = 2048;
-        char buffer[MAXBUFFSIZE];
-        if(FD_ISSET(fd, &active_rfds)) {
+        
+        if(FD_ISSET(fd, &activo_rfds)) {
             int leido=read(fd, buffer, MAXBUFFSIZE);
+            write(1,"En fifo: ",9);
             write(1,buffer,leido);
-        else
-            printf(".");
+            } else
+                printf(".");
 
-        exit(1);
     } //Fin buble principal while
     return 0;
 }
-
-
-
-
-
