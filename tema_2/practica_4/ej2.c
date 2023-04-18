@@ -50,7 +50,7 @@ int main(){
     
     fd_set rfds,activo_rfds;
     int r;
-    //struct timeval at,t;
+    struct timeval at,t;
 
     FD_ZERO(&rfds); //limpia, pone todo a 0
     FD_SET(0,&rfds);
@@ -59,16 +59,15 @@ int main(){
     
     printf ("maxfds: %d\n",maximo);
     while(1){
-        //t.tv_sec=3; //Ajusta el timer
-        //t.tv_usec=0;
-        //at=t;
+        t.tv_sec=3; //Ajusta el timer
+        t.tv_usec=0;
+        at=t;
         copia_fdset (&activo_rfds, &rfds, maximo+1);
-        if((r= select(maximo+1,&activo_rfds, NULL, NULL, NULL))<0){
-        //if((r= select(maximo+1,&activo_rfds, NULL, NULL, &at))<0){
+        if((r= select(maximo+1,&activo_rfds, NULL, NULL, &at))<0){
             perror("select");
             close (fd); exit(-1);
         }
-        //at=t;
+        at=t;
         if(FD_ISSET(fd, &activo_rfds)) {
             maximo = 0 > fd ? 0:fd;
             int leido=read(fd, buffer, MAXBUFFSIZE);
