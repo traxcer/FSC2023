@@ -41,6 +41,9 @@ int main(){
             case EV_TEARDOWN:
                 
                 break;
+            case EV_SETUP:
+                
+                break;
             
             default:
                 break;
