@@ -1,0 +1,18 @@
+Implemente un servidor UDP que escuche en el puerto 4950 y 
+or cualquier interfaz de red con IP asignada en la máquina (INADDR_ANY), 
+y que atienda peticiones de clientes (una a una) de forma indefinida. 
+Los clientes enviarán un mensaje (cadena de texto) y el servidor deberá 
+sustituir todos los dígitos de la cadena por asteriscos y devolver el mensaje 
+modificado al cliente.
+
+Así, si se recibe la cadena a21b, el cliente debe recibir a|**||*|b. 
+EL servidor atiende a clientes indefinidamente.
+Implemente también el cliente UDP correspondiente, que toma como 
+argumento la dirección IP del servidor UDP y una cadena de texto.
+
+El cliente deberá esperar la respuesta del servidor con la cadena modificada, 
+y la mostrará por pantalla.
+
+Dada la complejidad que supone desarrollar pruebas automáticas para este 
+tipo de programas, Siette sólo compilará vuestros códigos y los dejará 
+almacenados para pasarle las pruebas antiplagio y su inspección posterior.
