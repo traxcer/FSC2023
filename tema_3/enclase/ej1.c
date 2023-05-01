@@ -14,7 +14,7 @@ int main(int argc, char *argv[]){
        seria el trasponer los datos con una variable
        auxiliar, 
        
-       schar aux=a[1];
+       char aux=a[1];
        memcpy(&a[1],&a[0],sizeof(char));
        memcpy(&a[0],&aux,sizeof(char));
        

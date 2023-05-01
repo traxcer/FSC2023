@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 #define BUF_SIZE 1024
-#define PORT 5200
+#define PORT 4994
 
 int main(int argc, char *argv[]) {
     struct sockaddr_in servaddr;
@@ -19,25 +19,20 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    sockfd = socket(PF_INET, SOCK_STREAM, 0);
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
     memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(PORT);
-    uint32_t ip = inet_addr(argv[1]);
-    servaddr.sin_addr.s_addr=ip;
-    //2.- Establecemos la conexión con el servidor
-	if ((connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) ) < 0) {
-		perror("connect");
-		exit(1);
-	}
-    printf("Conectado...\");
-    //3.- Rutina del servidor
-    if (write_n(sockfd, argv[2], sizeof(argv[2])) != sizeof(argv[2])){
-		perror("write_n buffer");
-		return -1;
-	}
-    
+    inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
+
+    sendto(sockfd, argv[2], strlen(argv[2]), 0, (struct sockaddr *) &servaddr, sizeof(servaddr));
+
+    n = recvfrom(sockfd, buf, BUF_SIZE, 0, NULL, NULL);
+    buf[n] = '\0';
+
+    printf("Mensaje modificado: %s\n", buf);
+
     close(sockfd);
 
     return 0;
