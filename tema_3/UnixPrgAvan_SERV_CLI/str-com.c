@@ -2,6 +2,8 @@
 Funciones para comunicarse con conectores del tipo STREAM (str-com.c)
 =============================================================================*/
 #include "scomun.h"
+#include "scomun.c"
+#define MAXLINEA 256
 
 void recibir_mensaje_str (int sfd);
 void enviar_mensajes_str (int sfd);
@@ -44,10 +46,9 @@ int leer_linea (int fd, char *buf, int nbytes){
         *buf++ = b;
     }
     *buf = 0;
+    }
 return (n);
 }
-
-#define MAXLINEA 256
 
 /*=============================================================================
 recibir_mensaje_str: esta función la ejecutan los servidores que trabajen con
@@ -64,7 +65,7 @@ void recibir_mensaje_str (int sfd){
         return; /*Fin de servicio.*/
     else if (nbytes == -1) {
         perror("leer_linea");
-        exit (-1);
+        exit (1);
     }
     printf ("Mensaje recibido: %s\n", linea);
     /*Formación del mensaje para el cliente.*/
@@ -75,7 +76,7 @@ void recibir_mensaje_str (int sfd){
     nbytes = strlen (mensaje);
     if (escribirn (sfd, mensaje, nbytes) != nbytes) {
         perror ("escribirn");
-        exit (-1);
+        exit (1);
     }
     printf ("Mensaje devuelto: %s\n", mensaje);
     }

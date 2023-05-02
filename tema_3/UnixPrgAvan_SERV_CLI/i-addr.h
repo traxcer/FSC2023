@@ -11,5 +11,5 @@ familia de conectores AF_INET.
 #include <arpa/inet.h>
 #define PUERTO_SERVIDOR_TCP 7000
 #define PUERTO_SERVIDOR_UDP 7000
-#define DIRECCION_NODO_SERVIDOR "192.0.0.5"
+#define DIRECCION_NODO_SERVIDOR "127.0.0.1"
 #endif

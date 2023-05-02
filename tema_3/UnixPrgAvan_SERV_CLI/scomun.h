@@ -12,6 +12,8 @@ manejo de conectores.
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
 
 #define CR 10 /*Carácter retorno de carro. */
 
