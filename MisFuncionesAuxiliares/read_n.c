@@ -1,3 +1,5 @@
+#include <unistd.h>
+#include <errno.h>
 
 /* Tomado de ejemplo de profesor */
 
