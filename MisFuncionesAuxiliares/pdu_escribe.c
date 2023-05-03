@@ -15,13 +15,16 @@ struct PDU {
     uint16_t size;
     char payload[T];
 } datos;
-
 datos.size=3;
+char mypayload[T];
 memcpy (&datos.payload,"a1b",datos.size);
 
 ssize_t canal=open("prueba.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+memcpy(&mypayload,&datos.payload,datos.size);
+mypayload[datos.size+1]='\0';
 
-u_int8_t tam=htons(datos.size);
+printf("datos.size= %d datos.payload=%s\n",datos.size,mypayload);
+uint16_t tam=htons(datos.size);
 if((write_n(canal,(char *) &tam,sizeof(uint16_t)))<0){
     perror("write_n datos.size");
     close (canal);
@@ -33,5 +36,6 @@ if((write_n(canal,(char *) &datos.payload,datos.size))<0){
     exit(-1);
 }
 close (canal);
+printf("fin\n");
 return 0;
 }
