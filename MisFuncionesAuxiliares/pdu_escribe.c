@@ -1,41 +1,34 @@
-#include <stdio.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <fcntl.h>
-#include <string.h>
-#include <stdlib.h>
-#include "write_n.c"
+/**
+ * Función que envía una PDU por el socket 
+ * en una única llamada a write_n().
+ * La función devuelve:
+ * 	-1: en caso de error
+ *   n: el nº de bytes escritos en otro caso
+ */
+int enviarPDU(int sd, struct PDU * pdu) {
+	int buffer_size = sizeof(int) + pdu->size;
+	char b[buffer_size];
+	
+	//empaqueto en el buffer
+	pack_pdu(b, pdu);
 
-#define T 255
+	//envío el buffer
+	if (write_n(sd, b, buffer_size) != buffer_size){
+		perror("write_n buffer");
+		return -1;
+	}
 
-
-int main(){
-
-struct PDU {
-    uint16_t size;
-    char payload[T];
-} datos;
-datos.size=3;
-char mypayload[T];
-memcpy (&datos.payload,"a1b",datos.size);
-
-ssize_t canal=open("prueba.txt", O_WRONLY|O_CREAT|O_TRUNC, 0644);
-memcpy(&mypayload,&datos.payload,datos.size);
-mypayload[datos.size+1]='\0';
-
-printf("datos.size= %d datos.payload=%s\n",datos.size,mypayload);
-uint16_t tam=htons(datos.size);
-if((write_n(canal,(char *) &tam,sizeof(uint16_t)))<0){
-    perror("write_n datos.size");
-    close (canal);
-    exit(-1);
+ 	return buffer_size;
 }
-if((write_n(canal,(char *) &datos.payload,datos.size))<0){
-    perror("write_n datos.size");
-    close (canal);
-    exit(-1);
+
+
+void imprimirPDU(struct PDU * pdu) {
+	pdu->payload[pdu->size] = '\0';
+	printf("PDU = %s (%d)\n",pdu->payload, pdu->size);
 }
-close (canal);
-printf("fin\n");
-return 0;
+
+void pack_pdu(char * b, struct PDU * pdu) {
+	uint32_t size_big_endian = htonl(pdu->size);
+	memcpy(b, &size_big_endian, sizeof(size_big_endian));
+	memcpy(b+sizeof(size_big_endian), pdu->payload, pdu->size);
 }
