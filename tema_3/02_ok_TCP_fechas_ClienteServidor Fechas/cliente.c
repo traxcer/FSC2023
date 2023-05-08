@@ -61,8 +61,14 @@ int main() {
     printf("Numero de bytes recibidos del servidor:%d con la Operacion: %d\n", numbytes,codigoOperacion);
     if (codigoOperacion == RESPUESTA_FECHA) {
 
+    /*recibe tamaño de la fecha*/
+    uint16_t tamfecha;
+    numbytes=recv(descSocket, &tamfecha, sizeof(tamfecha),0) ;
+    printf("Numero de bytes recibidos del servidor:%d con el tamaño de la fecha:%d\n", numbytes, tamfecha);
+    tamfecha=ntohs(tamfecha);
+
     /*recibe la fecha*/
-    numbytes=recv(descSocket, &buffer, sizeof(short),0) ;
+    numbytes=recv(descSocket, &buffer, tamfecha,0) ;
     if (numbytes<0){
         perror("recv fecha");
         exit(-1);
@@ -72,9 +78,25 @@ int main() {
         exit(-1);
     }
     printf("Numero de bytes recibidos del servidor:%d\n", numbytes);
-    fecha.dia=ntohs(buffer);
-    fecha.mes=ntohs(buffer[2*sizeof(short)]);
-    fecha.anno=ntohs(buffer[3*sizeof(short)]);
+    char *aux=buffer;
+    memcpy(&fecha.dia,aux,sizeof(fecha.dia));
+    fecha.dia=ntohs(fecha.dia);
+    aux+=sizeof(fecha.dia);
+    memcpy(&fecha.mes,aux,sizeof(fecha.mes));
+    fecha.mes=ntohs(fecha.mes);
+    aux+=sizeof(fecha.mes);
+    memcpy(&fecha.anno,aux,sizeof(fecha.anno));
+    fecha.anno=ntohs(fecha.anno);
+    aux+=sizeof(fecha.anno);
+    memcpy(&fecha.hora,aux,sizeof(fecha.hora));
+    fecha.hora=ntohs(fecha.hora);
+    aux+=sizeof(fecha.hora);
+    memcpy(&fecha.minuto,aux,sizeof(fecha.minuto));
+    fecha.minuto=ntohs(fecha.minuto);
+    aux+=sizeof(fecha.minuto);
+    memcpy(&fecha.segundo,aux,sizeof(fecha.segundo));
+    fecha.segundo=ntohs(fecha.segundo);
+        
     printf("Fecha: %d-%d-%d ", fecha.dia , fecha.mes , fecha.anno ) ;
     printf("Hora:%d-%d-%d\n", fecha.hora, fecha.minuto, fecha.segundo) ;
     }

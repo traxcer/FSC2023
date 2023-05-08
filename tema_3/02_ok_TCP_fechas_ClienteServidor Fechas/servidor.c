@@ -90,6 +90,15 @@ int main() {
                 // send(nuevoDescSocket, &fecha , sizeof(fecha),0) ; Hay que enviar campo a campo
                 //empaqueto y envio
                 printf("Fecha obtenida: %hd/%hd/%hd\n",fecha.dia,fecha.mes,fecha.anno);
+                printf("Hora obtenida: %hd/%hd/%hd\n",fecha.hora,fecha.minuto,fecha.segundo);
+                
+                uint16_t tamfecha=sizeof(fecha.dia)+sizeof(fecha.mes)+sizeof(fecha.anno)+sizeof(fecha.hora)+sizeof(fecha.minuto)+sizeof(fecha.segundo);
+                
+                //envia tamaño
+                uint16_t tam=htons(tamfecha);
+                send(nuevoDescSocket,&tamfecha,sizeof(tam),0);
+
+                //envia empaquetada la fecha
                 char *aux;
                 aux=buffer;
                 fecha.dia=htons(fecha.dia);
@@ -109,9 +118,7 @@ int main() {
                 aux+=sizeof(fecha.minuto);
                 fecha.segundo=htons(fecha.segundo);
                 memcpy(aux,&fecha.segundo, sizeof(fecha.segundo));               
-                aux+=sizeof(fecha.segundo);
-                printf("Fecha enviada: %hd/%hd/%hd\n",fecha.dia,fecha.mes,fecha.anno);
-                send(nuevoDescSocket,buffer,aux-buffer,0);
+                send(nuevoDescSocket,buffer,tamfecha,0);
                 break ;
                 }
             default: 
