@@ -40,8 +40,8 @@ int main(){
 		perror("SIGCHLD");
 		exit(1);
 	}
+
 	int sd_datos;
-	
 	char b[TAM_BUFFER] ;
 	char nombre_host[200] ;
 	int longBE, longitud;
@@ -76,7 +76,7 @@ int main(){
 		exit(1) ;
 	}
 	
-	//5.- Rutina del servideor
+	//5.- Rutina del servidor
 	struct sockaddr_in cli_addr;
 	socklen_t long_cli_addr= sizeof(cli_addr);
 	pid_t pid;
