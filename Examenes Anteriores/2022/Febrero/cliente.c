@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     printf("Conectado al servidor...\n");
     do{
     n = read_n(sockfd, buffer, tam_buffer);
-    printf("Recibidos %d bytes...\n",n);
+    printf("(Recibidos %d bytes) ",n);
     aux=buffer;
     memcpy(&temperatura,aux,sizeof(uint16_t));
     temperatura=ntohs(temperatura);
@@ -53,8 +53,7 @@ int main(int argc, char *argv[]) {
     if (pow(temperatura,3)!=control)
         printf ("error al recibir la temperatura");
     else
-    
-    printf("Mensaje recibido: Temperatura= %d Control=%u\n", temperatura,control);
+        printf("Mensaje recibido: Temperatura= %d Control=%u\n", temperatura,control);
     } while(1);
     close(sockfd);
 

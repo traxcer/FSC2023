@@ -39,7 +39,7 @@ ssize_t write_n(int fd,char *b,size_t tam);
 
 void manejador_alarma(int signo){
     signal(SIGALRM,manejador_alarma); //armo la alarma
-    write(1,"ALARMA: Envio...",16);
+    write(1,"Envio->",7);
     enviar=1;
 }
 
@@ -48,6 +48,7 @@ int main(){
     uint32_t control;
     
     struct itimerval temporizador;
+    struct itimerval tempozero;
     struct timeval tiempoini;
     struct timeval tiempoini_zero;
     struct timeval tiemporepe;
@@ -65,8 +66,9 @@ int main(){
     
     temporizador.it_value=tiempoini;
     temporizador.it_interval=tiemporepe;
-    
+   
     signal(SIGALRM,manejador_alarma); //armo el manejador de la alarma
+    signal(SIGPIPE,SIG_IGN);
 
     struct sockaddr_in dir_servidor, dir_cliente;
     socklen_t tam_dir_cliente;
@@ -118,7 +120,7 @@ int main(){
         setitimer(ITIMER_REAL,&temporizador,NULL); //activo el temporizador
         int fin=1;
         int pid=getpid();
-        while (fin) {
+        while (fin==1) {
             if (enviar==1){
                 enviar=0; //resetea
                 temperatura = rand() % 10; //valor aleatorio entre 0 y 9. rand() está en stdlib.h 
@@ -135,12 +137,16 @@ int main(){
                 printf("(Enviados %d bytes)\n",r);
                 if ((r<0) && (errno==EPIPE)){
                     errno=0;
+                    signal(SIGPIPE,SIG_IGN);
                     fin=0;
                     if (close (n_sd)<0){
                         perror("Servidor TCP: error en close\n");
                         close (sd);
                         exit(-1);
                     }
+                    tempozero.it_value=tiempoini_zero;
+                    tempozero.it_interval=tiemporepe_zero;
+                    setitimer(ITIMER_REAL,&tempozero,NULL); //desactivo el temporizador
                 } 
                 } //fin de la condición enviar
             } //fin del bucle de la conexión cliente
