@@ -41,23 +41,49 @@ int main(int argc, char *argv[]) {
         exit(-1);
     }
     printf("Conectado al servidor...\n");
-    do{
-    n = read_n(sockfd, buffer, tam_buffer);
-    printf("(Recibidos %d bytes) ",n);
-    aux=buffer;
-    memcpy(&temperatura,aux,sizeof(uint16_t));
-    temperatura=ntohs(temperatura);
-    aux += sizeof(uint16_t);
-    memcpy(&control,aux,sizeof(uint32_t));
-    control=ntohl(control);
-    if (pow(temperatura,3)!=control)
-        printf ("error al recibir la temperatura");
-    else
-        printf("Mensaje recibido: Temperatura= %d Control=%u\n", temperatura,control);
-    } while(1);
-    close(sockfd);
 
-    return 0;
+    //4. select para controlar entrada por teclado de fin y datos del servidor
+    fd_set cjto, cjto_trab;
+    FD_ZERO(&cjto);
+    FD_SET(0,&cjto);
+    FD_SET(sockfd,&cjto);
+    int max_desc=sockfd;
+    int fin=0;
+    do{
+        memcpy(&cjto_trab,&cjto,sizeof(cjto));
+        int r=select(max_desc+1,&cjto_trab,NULL,NULL,NULL);
+        if (r<0){
+            perror("Cliente TCP: select");
+            close(sockfd);
+            exit(-1);
+        }
+        if(FD_ISSET(sockfd,&cjto_trab)){
+            n = read_n(sockfd, buffer, tam_buffer);
+            printf("(Recibidos %d bytes) ",n);
+            aux=buffer;
+            memcpy(&temperatura,aux,sizeof(uint16_t));
+            temperatura=ntohs(temperatura);
+            aux += sizeof(uint16_t);
+            memcpy(&control,aux,sizeof(uint32_t));
+            control=ntohl(control);
+            if (pow(temperatura,3)!=control){
+                printf ("error al recibir la temperatura");
+            } else {
+                printf("Mensaje recibido: Temperatura= %d Control=%u\n", temperatura,control);
+            }
+        }
+        if(FD_ISSET(0,&cjto_trab)){
+            read(0,buffer,20);
+            if (strncmp("fin",buffer,3)==0){
+                printf("El cliente ha cerrado la conexión\n");
+                close (sockfd);
+                fin=1;
+            } else {
+                printf("Comando no reconocido\n");
+            }
+        }
+    } while (fin==0);
+return 0;
 }
 
 /*==================
