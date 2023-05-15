@@ -116,12 +116,14 @@ int main(){
         printf("Aceptada Conexión: socket=%d, Cliente:%s\n",n_sd,inet_ntoa(dir_cliente.sin_addr));
         //Activo el temporizador
         setitimer(ITIMER_REAL,&temporizador,NULL); //activo el temporizador
-        do {
+        int fin=1;
+        int pid=getpid();
+        while (fin) {
             if (enviar==1){
                 enviar=0; //resetea
                 temperatura = rand() % 10; //valor aleatorio entre 0 y 9. rand() está en stdlib.h 
                 control=pow(temperatura,3);
-                printf("(%d)Temperatura =%u Control=%u\n", getpid(),temperatura, control);
+                printf("(pid:%d) Temperatura =%u Control=%u ",pid,temperatura, control);
                 //empaqueto y envio
                 aux=b;
                 temperatura=htons(temperatura);
@@ -130,23 +132,18 @@ int main(){
                 aux += sizeof(temperatura);
                 memcpy(aux,&control,sizeof(control));
                 r = write_n(n_sd,b,tamaño_pdu);
-                if (r<0){
-                    close (n_sd);
-                    close (sd);
-                    if (errno==EPIPE){
-                        //el servidor no debe terminar, pero cierra la conexión
-                        errno=0;
-                        continue;
-                    } else {
-                        perror("Servidor TCP en write_n\n");
-                        exit(-1);                        
+                printf("(Enviados %d bytes)\n",r);
+                if ((r<0) && (errno==EPIPE)){
+                    errno=0;
+                    fin=0;
+                    if (close (n_sd)<0){
+                        perror("Servidor TCP: error en close\n");
+                        close (sd);
+                        exit(-1);
                     }
-                }
-            } //fin de la condición enviar
-        } while ((r>0) || (errno==EPIPE));//fin del bucle de la conexión cliente
-            if(close (n_sd)<0){
-                perror("Servidor TCP: error en close\n");
-            }
+                } 
+                } //fin de la condición enviar
+            } //fin del bucle de la conexión cliente
         } //fin bucle while servidor
         if(close (sd)<0){
             perror("Servidor TCP: error en close\n");

@@ -5,8 +5,11 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <math.h>
+#include <errno.h>
 
 #define PORT 2119
+
+ssize_t read_n(int fd,char *b,size_t tam);
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -39,20 +42,43 @@ int main(int argc, char *argv[]) {
     }
     printf("Conectado al servidor...\n");
     do{
-    n = recv(sockfd, buffer, tam_buffer, 0);
+    n = read_n(sockfd, buffer, tam_buffer);
+    printf("Recibidos %d bytes...\n",n);
     aux=buffer;
     memcpy(&temperatura,aux,sizeof(uint16_t));
     temperatura=ntohs(temperatura);
     aux += sizeof(uint16_t);
     memcpy(&control,aux,sizeof(uint32_t));
-    control=ntohs(control);
+    control=ntohl(control);
     if (pow(temperatura,3)!=control)
         printf ("error al recibir la temperatura");
     else
     
-    printf("Mensaje de recibido: Temperatura= %d Control=%u\n", temperatura,control);
+    printf("Mensaje recibido: Temperatura= %d Control=%u\n", temperatura,control);
     } while(1);
     close(sockfd);
 
     return 0;
+}
+
+/*==================
+Funciones auxiliares
+===================*/
+
+ssize_t read_n(int fd,char *b,size_t tam){
+    int aescribir=tam;
+    int total_escrito=0;
+    int escrito;
+    do{
+        errno=0;
+        escrito=read(fd,b+total_escrito,aescribir);
+        if (escrito>0){
+            aescribir -=escrito;
+            total_escrito +=escrito;
+        }
+    } while (((escrito>0)&&(total_escrito<tam))||(errno==EINTR));
+    if (total_escrito>0)
+        return total_escrito;
+    else
+        return escrito;
 }
