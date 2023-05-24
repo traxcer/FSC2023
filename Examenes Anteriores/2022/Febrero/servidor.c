@@ -26,6 +26,7 @@
 #include <sys/time.h>
 #include <math.h>
 #include <unistd.h>
+#include <signal.h>
 
 
 #define PUERTO 2119
@@ -67,7 +68,7 @@ int main(){
     temporizador.it_value=tiempoini;
     temporizador.it_interval=tiemporepe;
    
-    signal(SIGALRM,manejador_alarma); //armo el manejador de la alarma
+    signal(SIGALRM,manejador_alarma)<0; //armo el manejador de la alarma
     signal(SIGPIPE,SIG_IGN);
 
     struct sockaddr_in dir_servidor, dir_cliente;
@@ -117,7 +118,10 @@ int main(){
         write(1, "Ya tengo un cliente conectado\n",31);
         printf("Aceptada Conexión: socket=%d, Cliente:%s\n",n_sd,inet_ntoa(dir_cliente.sin_addr));
         //Activo el temporizador
-        setitimer(ITIMER_REAL,&temporizador,NULL); //activo el temporizador
+        if(setitimer(ITIMER_REAL,&temporizador,NULL)<0){ //activo el temporizador
+            perror("Servidor TCP: setitimer");
+            exit(1);
+        }
         int fin=1;
         int pid=getpid();
         while (fin==1) {
@@ -137,7 +141,6 @@ int main(){
                 printf("(Enviados %d bytes)\n",r);
                 if ((r<0) && (errno==EPIPE)){
                     errno=0;
-                    signal(SIGPIPE,SIG_IGN);
                     fin=0;
                     if (close (n_sd)<0){
                         perror("Servidor TCP: error en close\n");

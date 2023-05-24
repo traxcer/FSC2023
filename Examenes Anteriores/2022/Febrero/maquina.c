@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <fcntl.h> 
 #include <sys/time.h>
+#include <string.h>
 
 //Defino los estados
 #define IDLE 0
@@ -28,7 +29,23 @@
 #define FIN 3
 
 int espera_evento(int fd,char *b);
+
 #define T 128
+
+int espera_evento(int fd, char *mensaje){
+    int leidos= read(fd, mensaje,T);  //Bloquea esperando evento de la fifo
+    if (leidos<0){
+        perror("read");
+        exit(1);
+    }
+    mensaje[leidos-1]='\0';
+
+    if (strncmp(mensaje,"/START ",7)){
+        return START;
+    }
+
+}
+
 
 int main(int argc, char * argv[]){
     if (argc<2){
@@ -49,14 +66,39 @@ int main(int argc, char * argv[]){
     temporizador.it_interval.tv_usec=0;
     
 	int estado = IDLE;
-	int evento;
+	int evento_recibido;
     int fin=0;
 	char mensaje[T];
 
     while (fin==0){
         printf("Estado: %d, Esperando Comando...", estado);
         int evento_recibido= espera_evento(fd, mensaje);
-
+    
+        switch (estado)
+        {
+        case IDLE:
+            switch (evento_recibido)
+            {
+            case START:
+                estado=MONITORIZANDO;
+                printf("Estado: Monitorizando...\n");
+                
+                break; //fin IDLE<-START
+            
+            default:
+                break;
+            }
+            break;//case IDLE
+        case MONITORIZANDO:
+            /* code */
+            break;
+        case ESPERANDO:
+            /* code */
+            break;
+        
+        default:
+            break;
+        }
         
     
     
@@ -66,14 +108,3 @@ int main(int argc, char * argv[]){
 return 0;
 } //fin del main
 
-int espera_evento(int fd, char *mensaje){
-    int leidos= read(fd, mensaje,T);
-    if (leidos<0){
-        perror("read");
-        exit(1);
-    }
-    mensaje[leidos-1]='\0';
-
-    if strncmp(mensaje,"/START ")
-
-}
