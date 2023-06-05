@@ -16,6 +16,7 @@
 #include <fcntl.h> 
 #include <sys/time.h>
 #include <string.h>
+#include <unistd.h>
 
 //Defino los estados
 #define IDLE 0
@@ -32,7 +33,10 @@ int espera_evento(int fd,char *b);
 
 #define T 128
 
+int p[2]
+
 int espera_evento(int fd, char *mensaje){
+    
     int leidos= read(fd, mensaje,T);  //Bloquea esperando evento de la fifo
     if (leidos<0){
         perror("read");
@@ -52,6 +56,13 @@ int main(int argc, char * argv[]){
         printf("Uso: %s <fifo>\n", argv[0]);
         exit (1);
     }
+    
+    //creamos la pipe
+    if (pipe(p)<0){
+        perror("pipe");
+        exit(1);
+    }
+
     //abrimos la fifo
     int fd;
     if((fd=open(argv[1],O_RDONLY))<0){
@@ -69,6 +80,10 @@ int main(int argc, char * argv[]){
 	int evento_recibido;
     int fin=0;
 	char mensaje[T];
+
+    fd_set cjt, cjtrab;
+    FD_ZERO(&cjt);
+    FD_SET(fd,&cjt)
 
     while (fin==0){
         printf("Estado: %d, Esperando Comando...", estado);
