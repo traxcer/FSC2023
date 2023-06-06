@@ -68,7 +68,10 @@ int main(){
     temporizador.it_value=tiempoini;
     temporizador.it_interval=tiemporepe;
    
-    signal(SIGALRM,manejador_alarma)<0; //armo el manejador de la alarma
+    if(signal(SIGALRM,manejador_alarma)==SIG_ERR){; //armo el manejador de la alarma
+        perror("signal");
+        exit(-1);
+    }
     signal(SIGPIPE,SIG_IGN);
 
     struct sockaddr_in dir_servidor, dir_cliente;
