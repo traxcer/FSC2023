@@ -33,7 +33,7 @@ int espera_evento(int fd,char *b);
 
 #define T 128
 
-int p[2]
+int p[2];
 
 int espera_evento(int fd, char *mensaje){
     
@@ -83,7 +83,7 @@ int main(int argc, char * argv[]){
 
     fd_set cjt, cjtrab;
     FD_ZERO(&cjt);
-    FD_SET(fd,&cjt)
+    FD_SET(fd,&cjt);
 
     while (fin==0){
         printf("Estado: %d, Esperando Comando...", estado);
