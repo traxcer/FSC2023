@@ -1,4 +1,4 @@
-/* EJERCICIO 1 */
+/* EJERCICIO 2 Máquina de Estados */
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/sysinfo.h>
 #include <signal.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -87,7 +86,6 @@ void manejadora_alarm (int s) {
 }
 
 void manejadora_usr1 (int s) {
-    write(1,"Ha llegado EV_SIGUSR1\n",22);
     int evento = EV_SIGUSR1;
     int escritos = write_n (pipe_fd [1], &evento, 4);//escribe entero
     if (escritos<0){
@@ -100,7 +98,6 @@ void manejadora_usr1 (int s) {
     signal (s, manejadora_usr1);
 }
 void manejadora_usr2 (int s) {
-    write(1,"Ha llegado EV_SIGUSR2\n",22);
     int evento = EV_SIGUSR2;
     int escritos = write_n (pipe_fd [1], &evento, 4);
     if (escritos<0){
@@ -129,48 +126,72 @@ int espera_evento () {
     FD_SET (pipe_fd [0], &conjunto);
     int max_fd = maximo (pipe_fd [0], fifo_fd);
     int r = select (max_fd + 1, &conjunto, 0, 0, 0);
+    //chequeo la llamada al sistema select() que no haya fallado
     if (r < 0) {
         if (errno == EINTR) {
         errno = 0;
     }
     else {
         perror ("Select");
-    exit (1);
+        //libera descriptores
+        close(fifo_fd);
+        close(pipe_fd[0]);
+        close(pipe_fd[1]);
+        //salimos de la ejecución
+        exit (1);
+        }
     }
-    }
-    if (FD_ISSET (pipe_fd[0], &conjunto)) {
-        int leidos = read_n (pipe_fd [0], &evento, 4);
+    /* Se chequea el resultado de select tras desbloquearse
+     tras detectarse dats en alguno de los descriptores que
+     se controlan */
+    if (FD_ISSET (pipe_fd[0], &conjunto)) { //datos para leer en la pipe
+        /* leo el comando que hay en la pipe, uso la lectura protegida con
+        con read_n, para proteger la lectura de eventuales señales */
+        int leidos = read_n (pipe_fd[0], &evento, 4);
         if (leidos < 0) {
             perror ("Leyendo\n");
             exit (1);
         }
-        return evento;
+        return evento; // devuelve el comando leido 
     }
-    if (FD_ISSET (fifo_fd, &conjunto)) {
+    if (FD_ISSET (fifo_fd, &conjunto)) { //datos para leer de la fifo
         char buffer [512];
         int leidos;
+        /*  leo la cadena que hay en la fifo, desconozco la longitud de
+        la cadena a leer, hago un do...while y controlo que no interfiera
+        una señal con errno==EINTR */
         do {
+            errno=0;
             leidos = read (fifo_fd, buffer, 512);
             if (leidos < 0) {
-            if (errno == EINTR) {
-                errno = 0;
-            }
-            else {
+                if (errno == EINTR) {
+                    errno = 0;
+                    continue; //continua tras comprobar que es una señal
+                }
+            else { //no es una señal, es un error y se sale liberando recursos
                 perror ("Leyendo\n");
+                close(fifo_fd);
+                close(pipe_fd[0]);
+                close(pipe_fd[1]);
                 exit (1);
                 }
             }
-            buffer [leidos - 1] = '\0';
-            if (strcmp (buffer, "data") == 0) {
-                return EV_DATA;
+            
+            buffer [leidos - 1] = '\0'; //convierte en cadena
+            //(Ej: leidos=2. b[0] y b[1], entonces b[2-1]='\0', sustitute al ENTER que es el último caracter)
+            if (strcmp (buffer, "data") == 0) { //comparamos el comando
+                evento= EV_DATA;
+                return evento; // devuelve el comando leido 
             } else {
-                printf ("Cadena no reconocida. Terminando...\n");
+                printf ("Cadena no reconocida. Se considera un error y se sale de la Máquina.\n");
+                close(fifo_fd);
+                close(pipe_fd[0]);
+                close(pipe_fd[1]);
                 exit (1);
-                fin = 1;
             }
-        } while (leidos > 0 && errno == EINTR);
+        } while (leidos > 0); //mientras se haya leido se sigue leyendo
     }
-return -1;
+return 0;
 }
 /* main */
 
@@ -195,8 +216,8 @@ int main () {
     /* Estado inicial y ajuste temporizador */
     int estado = EST_OCIOSO;
     struct itimerval timer;
-    struct timeval t1 = {1, 500000};
-    struct timeval t2 = {0,0};
+    timer.it_interval.tv_sec=0; //no es periodido, pongo a 0
+    timer.it_interval.tv_usec=0;
 
     while (!fin) { //Bucle principal de la maquina de estados
         int evento = espera_evento ();
@@ -212,39 +233,44 @@ int main () {
                     } else {
                     printf ("Evento no esperado");
                     }
-                break;
+            break;
+            
             case EST_ESP_ENV:
-                if (evento == EV_SIGUSR1) {
-                printf ("datos enviados...\n");
-                estado = EST_ENVIADO;
-                timer.it_interval = t1;
-                timer.it_value = t1;
-                setitimer (ITIMER_REAL, &timer, 0);
+                if(evento== EV_SIGUSR1){
+                    printf ("enviando datos...\n");
+                    timer.it_value.tv_sec=1;
+                    timer.it_value.tv_usec=500000;
+                    estado = EST_ENVIADO;
+                    setitimer (ITIMER_REAL, &timer, 0); //activo temporizador    
                 }
-                break;
+            break;
+            
             case EST_ENVIADO:
                 switch (evento){
                     case EV_SIGALARM:
                         estado = EST_ESP_ENV;
-                        printf ("Timeout: volviendo al estado esperando evniar...\n");
+                        printf ("TimeOut (1.5s): volviendo al estado esperando enviar...\n");
                         break;
                     case EV_SIGUSR2:
                         estado = EST_OCIOSO;
-                        printf ("Pasando a estado ocioso...\n");
-                        timer.it_interval = t2;
-                        timer.it_value = t2;
+                        printf ("Enviado Ok. Pasando a estado ocioso...\n");
+                        timer.it_value.tv_sec=0; //pongo el temporizador a 0
+                        timer.it_value.tv_usec=0;
                         setitimer (ITIMER_REAL, &timer, 0);
                         break;
                     default:
                         printf ("Evento no esperado\n");
-                        exit (1);
                         break;
                 }
                 break;
                 default:
-                    printf ("Estado no esprado");
+                    printf ("Estado no esperado");
+                    close(fifo_fd);
+                    close(pipe_fd[0]);
+                    close(pipe_fd[1]);
                     exit (1);
                     break;
+            break;
             }
         } //Fin del bucle while
 return 0;
