@@ -137,8 +137,22 @@ int main(){
         exit(1);
     }
 int fin=0;
+int estado= IDLE; //Estado inicial
     while (fin==0){
-        
+        switch (estado)
+        {
+        case (IDLE):
+            /* code */
+            break; //fin estado IDLE 
+        case (WAITING):
+            /* code */
+            break; //fin estado WAITING
+        case (CONNECTED):
+            /* code */
+            break; //fin estado CONNECTED
+        default:
+            break;
+        }
 
     } //fi n while principal
 
