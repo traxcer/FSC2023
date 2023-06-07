@@ -7,6 +7,10 @@ Programador Manuel Eloy Gutiérrez Oñate
 
 #include <stdio.h>
 #include <errno.h>
+#include <signal.h>-
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 
 //Estados
@@ -19,6 +23,10 @@ Programador Manuel Eloy Gutiérrez Oñate
 #define CONNECT_CONFIRM 2
 #define TIMEOUT 3
 #define RESET 4
+
+//variable globales
+int fd_pipe[2];
+int fd_fifo;
 
 
 //Prototipos
@@ -63,16 +71,76 @@ int write_n(int fd,char *b, int n){
 }
 
 //manejadores de señales
+int msigusr1(int s){
+    int evento;
+    evento=CONNECT_REQUEST;
 
+    signal(s, msigusr1);
+    return evento;
+}
+void msigusr1(int s){
+    int evento;
+    evento=CONNECT_REQUEST;
+    //escribo el evento en la pipe
+    if(write_n(fd_pipe[1],evento, sizeof(evento))<0){
+        perror("Error write_n rn msigusr1");
+        exit(1);
+    }
+    signal(s, msigusr1);
+}
+void msigusr2(int s){
+    int evento;
+    evento=CONNECT_CONFIRM;
+    //escribo el evento en la pipe
+    if(write_n(fd_pipe[1],evento, sizeof(evento))<0){
+        perror("Error write_n en msigusr2");
+        exit(1);
+    }
+    signal(s, msigusr2);
+}
 
+void alarma(int s){
+    int evento;
+    evento=TIMEOUT;
+    //escribo el evento en la pipe
+    if(write_n(fd_pipe[1],evento, sizeof(evento))<0){
+        perror("Error write_n en alarma");
+        exit(1);
+    }
+    signal(s, msigusr1);
+}
 //espera eventos
 
 
-//funcioón principal
+//función principal
 int main(){
+    //abro la pipe y la fifo
+    if (pipe(fd_pipe)<0){
+        perror("Error creando la pipe");
+        exit(1);
+    }
+    if ((fd_fifo=open("fsc_maquina",O_RDONLY))<0){
+        perror("Error abriendo la fifo");
+        exit(1);
+    }
+    //armo las señales
+    if (signal(SIGUSR1, msigusr1)==SIG_ERR){
+        perror("signal sigusr1");
+        exit(1);
+    }
+    if (signal(SIGUSR2, msigusr2)==SIG_ERR){
+        perror("signal sigusr2");
+        exit(1);
+    }
+    if (signal(SIGALRM, alarma)==SIG_ERR){
+        perror("signal sigalrm");
+        exit(1);
+    }
+int fin=0;
+    while (fin==0){
+        
 
-
-
+    } //fi n while principal
 
     return 0; 
 } //fin main
