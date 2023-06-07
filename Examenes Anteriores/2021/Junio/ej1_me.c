@@ -1,4 +1,8 @@
-/* EJERCICIO 2 Máquina de Estados */
+/* 
+Programador Manuel Eloy Gutiérrez
+Examen Junio 2021 FSC
+EJERCICIO 2 Máquina de Estados */
+
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
