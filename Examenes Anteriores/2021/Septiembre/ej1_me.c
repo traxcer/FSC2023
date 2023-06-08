@@ -7,16 +7,20 @@ Programador Manuel Eloy Gutiérrez Oñate
 
 #include <stdio.h>
 #include <errno.h>
-#include <signal.h>-
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <sys/select.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/time.h>
 
 
 //Estados
-#define IDLE 1
-#define WAITING 2
-#define CONNECTED 3
+#define IDLE 0
+#define WAITING 1
+#define CONNECTED 2
 
 //Eventos
 #define CONNECT_REQUEST 1 
@@ -27,6 +31,7 @@ Programador Manuel Eloy Gutiérrez Oñate
 //variable globales
 int fd_pipe[2];
 int fd_fifo;
+char *estado_txt[]={"IDLE","WAITING","CONNECTED"};
 
 
 //Prototipos
@@ -71,18 +76,12 @@ int write_n(int fd,char *b, int n){
 }
 
 //manejadores de señales
-int msigusr1(int s){
-    int evento;
-    evento=CONNECT_REQUEST;
 
-    signal(s, msigusr1);
-    return evento;
-}
 void msigusr1(int s){
     int evento;
     evento=CONNECT_REQUEST;
     //escribo el evento en la pipe
-    if(write_n(fd_pipe[1],evento, sizeof(evento))<0){
+    if(write_n(fd_pipe[1],(char*)&evento, sizeof(evento))<0){
         perror("Error write_n rn msigusr1");
         exit(1);
     }
@@ -92,7 +91,7 @@ void msigusr2(int s){
     int evento;
     evento=CONNECT_CONFIRM;
     //escribo el evento en la pipe
-    if(write_n(fd_pipe[1],evento, sizeof(evento))<0){
+    if(write_n(fd_pipe[1],(char*)&evento, sizeof(evento))<0){
         perror("Error write_n en msigusr2");
         exit(1);
     }
@@ -103,14 +102,72 @@ void alarma(int s){
     int evento;
     evento=TIMEOUT;
     //escribo el evento en la pipe
-    if(write_n(fd_pipe[1],evento, sizeof(evento))<0){
+    if(write_n(fd_pipe[1],(char*)&evento, sizeof(evento))<0){
         perror("Error write_n en alarma");
         exit(1);
     }
-    signal(s, msigusr1);
+    //rearmo manejador de alarma
+    signal(s,alarma);
 }
 //espera eventos
+int espera_evento(){
+    fd_set conjunto;
+    FD_ZERO (&conjunto);
+    FD_SET (fd_fifo, &conjunto);
+    FD_SET (fd_pipe[0], &conjunto);
+    int maximo = fd_pipe[0] > fd_fifo ? fd_pipe[0]:fd_fifo;
+    int r= select(maximo+1,&conjunto,NULL,NULL,NULL);
+    if (r<0){
+        if (errno==EINTR){ //Ha interrumpido una señal
+            errno =0;
+        } else {
+            perror("select");
+            close (fd_fifo);
+            close (fd_pipe[0]);
+            close (fd_pipe[1]);
+            exit (1);
+        }
+    }
+    
+    if(FD_ISSET(fd_pipe[0],&conjunto)){
+        int evento;
+        if (read_n(fd_pipe[0],(char *)&evento,sizeof(evento))<0){
+            perror ("read_n pipe");
+            close (fd_fifo);
+            close (fd_pipe[0]);
+            close (fd_pipe[1]);
+            exit(1);
+        }
+        return evento;
+    }
 
+    if (FD_ISSET(fd_fifo,&conjunto)){
+        char b[512];
+        int leidos;
+        //lectura de la fifo, no puedo usar read_n, no se el tamaño a leer
+        do{
+            errno=0;
+            leidos=read(fd_fifo,b,512);
+        } while (errno==EINTR);
+        if (leidos <0){
+            perror("read de la fifo");
+            close (fd_fifo);
+            close (fd_pipe[0]);
+            close (fd_pipe[1]);
+            exit(1);
+        }
+        if (leidos ==0){
+            printf("Recibidos 0 bytes por la fifo, salimos...\n");
+            close (fd_fifo);
+            close (fd_pipe[0]);
+            close (fd_pipe[1]);
+            exit(1);
+        }
+    return RESET;
+    }
+
+    return 0;
+}
 
 //función principal
 int main(){
@@ -136,25 +193,69 @@ int main(){
         perror("signal sigalrm");
         exit(1);
     }
-int fin=0;
+
 int estado= IDLE; //Estado inicial
-    while (fin==0){
-        switch (estado)
-        {
+printf("--------------------------------------------\n");
+printf("Ejecutandose Maquina de estado (PID: %d\n",getpid());
+printf("--------------------------------------------\n");
+printf ("Estado (%d): %s\n",estado,estado_txt[estado]);
+int evento_recibido;
+struct itimerval timer;
+timer.it_interval.tv_sec=0;
+timer.it_interval.tv_usec=0;
+timer.it_value.tv_sec=2;
+timer.it_value.tv_usec=0;
+    while (1){
+            evento_recibido= espera_evento();
+        switch (estado){
         case (IDLE):
-            /* code */
+            switch (evento_recibido){
+                case CONNECT_REQUEST:
+                    estado=WAITING;
+                    //activamos temporizador 2 segundos
+                    setitimer(ITIMER_REAL,&timer,NULL);
+                    printf ("Estado (%d): %s\n",estado,estado_txt[estado]);
+                    break;
+                default:
+                    break;
+                } //fin switch eventos
             break; //fin estado IDLE 
         case (WAITING):
-            /* code */
+            switch (evento_recibido){
+                case TIMEOUT:
+                    estado=IDLE;//reseteo temporizador
+                    timer.it_interval.tv_sec=0;
+                    setitimer(ITIMER_REAL,&timer,NULL);
+                    printf ("Estado (%d): %s\n",estado,estado_txt[estado]);
+                    break;
+                case CONNECT_CONFIRM:
+                    //reseteo temporizador
+                    timer.it_interval.tv_sec=0;
+                    setitimer(ITIMER_REAL,&timer,NULL);
+                    estado=CONNECTED;
+                    //reseteo temporizador
+                    timer.it_interval.tv_sec=0;
+                    setitimer(ITIMER_REAL,&timer,NULL);
+                    printf ("Estado (%d): %s\n",estado,estado_txt[estado]);
+                    break;
+                default:
+                    break;
+                } //fin switch eventos
+            
             break; //fin estado WAITING
         case (CONNECTED):
-            /* code */
-            break; //fin estado CONNECTED
+            switch (evento_recibido){
+                case RESET:
+                estado=IDLE;
+                printf ("Estado (%d): %s\n",estado,estado_txt[estado]);
+            break; //fin
+                default:
+                break;
+            }
         default:
             break;
         }
-
-    } //fi n while principal
+    } //fin while principal
 
     return 0; 
 } //fin main
