@@ -23,9 +23,8 @@
 #define EST_CRITICO 1
 //Eventos
 #define EV_TIMEOUT 0
-#define EV_ERROR1 1
-#define EV_ERROR2 2
-#define EV_WARNING 3
+#define EV_ERROR 1
+#define EV_WARNING 2
 
 //Funciones accesorias
 ssize_t read_n (int fd, void * buffer, size_t n) {
@@ -113,6 +112,12 @@ int espera_evento () {
         exit (1);
         }
     }
+    
+if (FD_ISSET (fd_pipe [0], &conjunto)) {
+    read_n(fd_pipe[0],&evento,sizeof(evento));
+    return evento;
+    } //fd_isset fd_pipe
+
 if (FD_ISSET (fd_fifo, &conjunto)) {
     char letra[2];
     int leidos = read_n (fd_fifo, letra, 2);
@@ -133,23 +138,15 @@ if (FD_ISSET (fd_fifo, &conjunto)) {
         exit(1);
     }
     if (strcmp (letra, "E") == 0) {
-        if (errores == 0) {
-            evento = EV_ERROR1;
-            errores++;
-        } else {
-            evento = EV_ERROR2;
-            errores = 0;
-        }
+        evento = EV_ERROR;
+        errores++;
     } //comprobando si es una W
     if (strcmp(letra,"W")==0){
         evento = EV_WARNING;
-        printf ("warning: %d\n", evento);
     }
 } //fin fd_isset fd_fifo
 
-if (FD_ISSET (fd_pipe [0], &conjunto)) {
-    evento = EV_TIMEOUT;
-    } //fd_isset fd_pipe
+
 return evento;
 } //fin espera evento
 
@@ -175,66 +172,78 @@ int main () {
     timer.it_interval.tv_sec=0;
     timer.it_interval.tv_usec=0;
     printf("-----------------------------------------\n");
-    printf("Máquina Activa en estado: %s\n", estado_txt[estado]);
+    printf("Máquina Activa\n");
     printf("-----------------------------------------\n");
     while (!fin) { //Bucle maquina de estado
+        printf("------------------------\n");
+        printf("ESTADO ACTUAL: %s\n",estado_txt[estado]);
+        printf("------------------------\n");
         int evento = espera_evento ();
-        if (evento == -1) {
-            perror ("Evento no encontrado");
-            exit (1);
-        }
-    switch (estado){
-        case EST_LEYENDO:
-            switch (evento){
-                case EV_ERROR1:
-                break;
-                case EV_ERROR2:
-                    estado = EST_CRITICO;
-                    printf ("Cambiando de estado...\n");
-                    printf("Estado: %s",estado_txt[estado]);
-                    //activo temporizador
-                    timer.it_value.tv_sec=3;
-                    timer.it_value.tv_usec=500000;
-                    setitimer (ITIMER_REAL, &timer, 0);
-                break;
-                case EV_WARNING:
-                    printf ("WARNING...\n");
-                break;
-                default:
+        
+        switch (estado){
+            case EST_LEYENDO:
+
+                switch (evento){
+                    case EV_ERROR:
+                        if (errores==1){
+                            printf("Se ha producido un primer Error.\n");
+                            }
+                        else if (errores==2){
+                            estado = EST_CRITICO;
+                            printf ("Cambio a estado->");
+                            printf("%s\n",estado_txt[estado]);
+                            printf("Se ha producido un segundo Error.\n");
+                            //activo temporizador 3,5 segundos
+                            timer.it_value.tv_sec=3;
+                            timer.it_value.tv_usec=500000;
+                            if(setitimer (ITIMER_REAL, &timer, 0)<0){
+                                perror("setitimer");
+                                close(fd_fifo);
+                                close(fd_pipe[0]);
+                                close(fd_pipe[1]);
+                                exit(1);
+                            }
+                        }    
+                    break;
+                    case EV_WARNING:
+                        printf ("Se ha producido un WARNING.\n");
+                    break;
+                    default:
+                    break;
+                }
+
+            break; //EST_LEYENDO
+            case EST_CRITICO:
+                switch (evento){
+                    case EV_ERROR:
+                        printf("Ya se han producido %d errores.\n",errores);
+                        printf ("Se termina la maquina de estado por esta condición");
+                        close (fd_fifo);
+                        close(fd_pipe[0]);
+                        close(fd_pipe[1]);
+                        exit(1);
+                    break;
+                    case EV_TIMEOUT:
+                        printf("Ha saltado el TimeOur, reseteo errores\n");
+                        errores=0; //reseteo errores, ha transcurrido el TimeOut
+                        estado = EST_LEYENDO;
+                        //desactivo temporizador
+                        timer.it_value.tv_sec=0;
+                        timer.it_value.tv_usec=0;
+                        setitimer (ITIMER_REAL, &timer, 0);
+                    break;
+                    case EV_WARNING:
+                        printf ("WARNING...\n");
+                    break;
+                    default:
+                        printf ("Evento no esperado.");
+                        exit (1);
                     break;
             }
-        break;
-        case EST_CRITICO:
-            switch (evento){
-                case EV_ERROR1:
-                    printf ("Terminando maquina");
-                    close (fd_fifo);
-                    fin = 1;
-                break;
-                case EV_ERROR2:
-                    printf ("Evento no esperado 2 error");
-                    exit (1);
-                break;
-                case EV_TIMEOUT:
-                    estado = EST_LEYENDO;
-                    //desactivo temporizador
-                    timer.it_value.tv_sec=0;
-                    timer.it_value.tv_usec=0;
-                    setitimer (ITIMER_REAL, &timer, 0);
-                break;
-                case EV_WARNING:
-                    printf ("WARNING...\n");
-                break;
-                default:
-                    printf ("Evento no esperadodefault.");
-                    exit (1);
-                break;
-            }
-        break;
-    break;
-    default:
-    break;
-    }
-    }//Fin del buble while
+            break;
+            default:
+            break;
+        } //Fin del swith estados
+    }//Fin del bucle while
 return 0;
 } //fin del main
