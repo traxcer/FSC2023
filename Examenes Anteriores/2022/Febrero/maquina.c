@@ -102,9 +102,7 @@ int espera_evento(){
     //FD_SET(fd_pipe[0],&conjunto);
     //int maximo = fd_fifo > fd_pipe[0] ? fd_fifo:fd_pipe[0];
     int maximo=fd_fifo;
-    write(1,"Esperando que se desbloque el SELECT\n",37);
     int r= select(maximo+1,&conjunto,NULL, NULL, NULL);
-    write(1,"SELECT desbloqueado\n",20);
     if (r<0){
         perror("select");
         close (fd_fifo);
@@ -122,7 +120,7 @@ int espera_evento(){
         }
         mensaje[leidos-1]='\0'; //convierte en cadena
         printf("Mensaje recibido: %s\n",mensaje);
-        if (strcmp(mensaje,"/start ")==0){
+        if (strncmp(mensaje,"/start ",7)==0){
             lecturas=atoi(&mensaje[7]);
         return START;
         }
@@ -155,7 +153,7 @@ int main(int argc, char * argv[]){
     //}
 
     //abrimos la fifo
-    int fd_fifo;
+
     if((fd_fifo=open(argv[1],O_RDONLY))<0){
         perror("open");
         exit(1);
