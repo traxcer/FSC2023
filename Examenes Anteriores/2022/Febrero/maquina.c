@@ -46,6 +46,7 @@ int fd_pipe[2];
 int lecturas=0;
 int leer=0;
 int fin=0;
+int conhijo=0;
 char *estado_txt[]={"IDLE","MONITORIZANDO","ESPERANDO"};
 #define T 128
 
@@ -113,7 +114,6 @@ int espera_evento(){
     char mensaje[T];
     if (FD_ISSET(fd_fifo,&conjunto)){
         int leidos= read(fd_fifo, mensaje,T); 
-        printf("Leido de la fifo: %d",leidos);
         if (leidos<0){
             perror("read");
             exit(1);
@@ -144,7 +144,8 @@ int main(int argc, char * argv[]){
         exit (1);
     }
     pid_t pid;
-    signal(SIGCHLD, maneja_hijo); //Asigna manejador a la captura de la señal
+    //EL proceso padre ignara la alarma
+    signal(SIGALRM, SIG_IGN);
 
     //creamos la pipe
       //if ((pipe(fd_pipe))<0){
@@ -162,8 +163,9 @@ int main(int argc, char * argv[]){
 	int estado = IDLE;
 
     while (fin==0){
-        printf("Estado: %s\n", estado_txt[estado]);
-        write(1,"Esperando Comando...\n",21);
+        printf("=====================================\n");
+        printf("Estado: %s. Esperando Comando...\n", estado_txt[estado]);
+        printf("=====================================\n");
         int evento_recibido= espera_evento();
         if (evento_recibido==-1)
             printf("Comando no reconocido\n");
@@ -221,8 +223,15 @@ int main(int argc, char * argv[]){
             break;
         } //fin del switch estado
     if (estado==MONITORIZANDO){ //Aqui se crea el Hijo que simula las lecturas
-        pid = fork();
+        if (conhijo==0){ //no tiene hijo l0 crea
+            conhijo=1;
+            printf("Padre: Cra hijo\n");
+            pid = fork();
+        }
         if (pid==0){ //Proceso hijo
+            printf("Hijo: He entrado al hijo\n");
+            //activa la captura del temporizador
+            signal(SIGALRM, temporizador_medicion);
             struct itimerval timerhijo;
             timerhijo.it_value.tv_sec=1;
             timerhijo.it_value.tv_usec=0;
@@ -232,13 +241,20 @@ int main(int argc, char * argv[]){
             while (lecturas>0){
                 if (leer==1){
                     uint16_t temperatura=rand()%10;
-                    printf("Proceso Hijo (Monitorización %d): %d",lecturas,temperatura);
+                    write(1,"Proceso Hijo (Monitorización: ",30);
+                    write(1,&lecturas,sizeof(lecturas));
+                    write(1,") :",3);
+                    write(1,&temperatura,sizeof(temperatura));
+                    write(1,"\n",1);
                     lecturas --; //decrementa las lecturas pedidas
+                    leer=0;
                 }
                 leer=0;
             }
             exit(1); //termina el hijo
-        } 
+        } else {
+            signal(SIGCHLD,maneja_hijo);
+        }
         //Aqui estamos en el padre que sigue atendiendo la fifo
     }
     } // del bucle while (fin==0)
