@@ -14,6 +14,8 @@
 #define EV_NO_FIN 1
 #define EV_TIMEOUT 2
 
+char *estado_txt[]={"ESPERA FIN 1","ESPERA FIN 2"};
+
 //función epera_evento
     int espera_evento (int fd) {
     int evento = -1;
@@ -22,8 +24,8 @@
     char buffer [512];
     fd_set conjunto;
     FD_ZERO (&conjunto);
-    FD_SET (0, &conjunto);
-    FD_SET (fd, &conjunto);
+    FD_SET (0, &conjunto); //eventos desde teclado
+    FD_SET (fd, &conjunto); //eventos desde fifo: fsc_fifo
     struct timeval tiempo = {5, 500};
     //Select
     int resultado = select (fd + 1, &conjunto, 0, 0, &tiempo);
@@ -34,7 +36,7 @@
     if (resultado == 0) {
         evento = EV_TIMEOUT;
     } else { 
-    if (FD_ISSET (0, &conjunto)) {
+    if (FD_ISSET (0, &conjunto)) { //teclado
         memset (&tiempo, 0, sizeof (tiempo));
         leidos = read (0, buffer, 512);
         if (leidos < 0) {
@@ -61,11 +63,15 @@
             exit (1);
         }
         if (leidos == 0) {
-        FD_CLR (fd, &conjunto);
+        FD_CLR (fd, &conjunto);//se ha cerrado el otro extremo de la fifo
         }
         if (leidos > 0) {
             buffer [leidos] = '\0';
-            char * q = strstr (buffer, "fin");
+            char *q;
+            q = strstr (buffer, "fin");
+            if (q==NULL){
+                q = strstr (buffer, "FIN");    
+            }
             if (q == NULL) {
                 evento = EV_NO_FIN;
             } else {
@@ -86,6 +92,7 @@ int main () {
         perror ("Error al abrir la fifo");
     }
     while (!fin) {
+        printf("ESTADO: %s\n",estado_txt[estado]);
         evento = espera_evento (fd);
         if (evento < 0) {
             printf ("Evento no reconocido");
