@@ -43,9 +43,11 @@
 //variable globales
 int fd_fifo;
 int fd_pipe[2];
+pid_t pid;
 int lecturas=0;
-int leer=0;
+uint16_t leido=0;
 int fin=0;
+int estado;
 int conhijo=0;
 char *estado_txt[]={"IDLE","MONITORIZANDO","ESPERANDO"};
 #define T 128
@@ -87,12 +89,15 @@ int write_n(int fd, char *buffer, int n){
 }
 
 void maneja_hijo(int s){
-    wait(0);
+    wait(NULL);
+    printf("PADRE: Mi hijo a Terminado, me pongo en IDLE\n");
+    estado=IDLE;
     signal(s,maneja_hijo);
 }
-void temporizador_medicion(int s){
-    signal(s,temporizador_medicion); //reactiva la captura del temp
-    leer=1;
+void temporizador_medicion(int s){ 
+    lecturas--;
+    signal(SIGALRM, temporizador_medicion); //reactiva la captura del temp
+    leido=rand()%10;
 }
 
 int espera_evento(){
@@ -100,10 +105,12 @@ int espera_evento(){
     fd_set conjunto;
     FD_ZERO(&conjunto);
     FD_SET(fd_fifo,&conjunto);
-    //FD_SET(fd_pipe[0],&conjunto);
-    //int maximo = fd_fifo > fd_pipe[0] ? fd_fifo:fd_pipe[0];
     int maximo=fd_fifo;
-    int r= select(maximo+1,&conjunto,NULL, NULL, NULL);
+    int r;
+    do {
+        errno=0;
+        r= select(maximo+1,&conjunto,NULL, NULL, NULL);
+    } while (errno==EINTR);
     if (r<0){
         perror("select");
         close (fd_fifo);
@@ -143,28 +150,21 @@ int main(int argc, char * argv[]){
         printf("Uso: %s <fifo>\n", argv[0]);
         exit (1);
     }
-    pid_t pid;
-    //EL proceso padre ignara la alarma
-    signal(SIGALRM, SIG_IGN);
-
-    //creamos la pipe
-      //if ((pipe(fd_pipe))<0){
-      //  perror("pipe");
-      //  exit(1);
-    //}
-
+    
     //abrimos la fifo
-
     if((fd_fifo=open(argv[1],O_RDONLY))<0){
         perror("open");
         exit(1);
     }
     
-	int estado = IDLE;
+	signal(SIGALRM,temporizador_medicion);
+    signal(SIGCHLD, maneja_hijo);
+    
+    int estado = IDLE;
 
     while (fin==0){
         printf("=====================================\n");
-        printf("Estado: %s. Esperando Comando...\n", estado_txt[estado]);
+        printf("Estado: %s.\nEsperando Comando...\n", estado_txt[estado]);
         printf("=====================================\n");
         int evento_recibido= espera_evento();
         if (evento_recibido==-1)
@@ -177,7 +177,36 @@ int main(int argc, char * argv[]){
             case START:
                 estado=MONITORIZANDO;
                 printf("Estado: Monitorizando...\n");
-            break; //fin IDLE<-START
+                if ((pid=fork())<0){
+                    perror("fork");
+                    exit(1);
+                }
+                if (pid==0){ //Hijo
+                    printf("Esto lo escribe el hijo, Lecturas a hacer:%d\n", lecturas);
+                    struct itimerval timerhijo;
+                    timerhijo.it_value.tv_sec=1;
+                    timerhijo.it_value.tv_usec=0;
+                    timerhijo.it_interval.tv_sec=1;
+                    timerhijo.it_interval.tv_usec=0;
+                    setitimer(ITIMER_REAL,&timerhijo,NULL);
+                    while(lecturas>0){
+                        if (leido>0){
+                            printf("HIJO:Lectura hecha (%d): %d\n",lecturas,leido);
+                            leido=0;
+                        }
+                    }
+                    timerhijo.it_value.tv_sec=0;
+                    timerhijo.it_interval.tv_sec=0;
+                    setitimer(ITIMER_REAL,&timerhijo,NULL);
+                    printf("HIJO: Cancela temporizador\n");
+                    printf("HIJO: Termino de forma limpia\n");
+                    exit(0);
+                } 
+                //Padre
+                    printf("PADRE: Pid del Proceso Hijo: %d\n",pid);
+                    printf("Esperando commados...\n");
+                
+            break; //fin IDLE-START
             default:
             break;
             } //fin del swith estado
@@ -188,8 +217,6 @@ int main(int argc, char * argv[]){
                     perror("SIGstop");
                     kill(pid,SIGKILL);
                     close (fd_fifo);
-                    //close (fd_pipe[0]);
-                    //close (fd_pipe[1]);
                     exit(1);
                 }
                 estado=ESPERANDO;
@@ -198,8 +225,6 @@ int main(int argc, char * argv[]){
                 if((kill(pid,SIGKILL))<0){
                     perror("SIGkill");
                     close (fd_fifo);
-                    //close (fd_pipe[0]);
-                    //close (fd_pipe[1]);
                     exit(1);
                 }
                 lecturas=0;
@@ -222,43 +247,8 @@ int main(int argc, char * argv[]){
         default:
             break;
         } //fin del switch estado
-    if (estado==MONITORIZANDO){ //Aqui se crea el Hijo que simula las lecturas
-        if (conhijo==0){ //no tiene hijo l0 crea
-            conhijo=1;
-            printf("Padre: Cra hijo\n");
-            pid = fork();
-        }
-        if (pid==0){ //Proceso hijo
-            printf("Hijo: He entrado al hijo\n");
-            //activa la captura del temporizador
-            signal(SIGALRM, temporizador_medicion);
-            struct itimerval timerhijo;
-            timerhijo.it_value.tv_sec=1;
-            timerhijo.it_value.tv_usec=0;
-            timerhijo.it_interval.tv_sec=1;
-            timerhijo.it_interval.tv_usec=0;
-            setitimer(ITIMER_REAL,&timerhijo,NULL); //activa temporizador
-            while (lecturas>0){
-                if (leer==1){
-                    uint16_t temperatura=rand()%10;
-                    write(1,"Proceso Hijo (Monitorización: ",30);
-                    write(1,&lecturas,sizeof(lecturas));
-                    write(1,") :",3);
-                    write(1,&temperatura,sizeof(temperatura));
-                    write(1,"\n",1);
-                    lecturas --; //decrementa las lecturas pedidas
-                    leer=0;
-                }
-                leer=0;
-            }
-            exit(1); //termina el hijo
-        } else {
-            signal(SIGCHLD,maneja_hijo);
-        }
-        //Aqui estamos en el padre que sigue atendiendo la fifo
-    }
+    
     } // del bucle while (fin==0)
-
 
 return 0;
 } //fin del main

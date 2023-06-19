@@ -1,0 +1,4 @@
+
+
+AL compilar la funcion pow (de la libreria (math.h))
+debe añadirse -lm a las opciones del compilador.
