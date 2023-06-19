@@ -59,9 +59,11 @@ int main(int argc, char * argv[]) {
             uint16_t dataBigEndian;
             int data;
             int leidos;
+            
             while (1) {
                 printf("Servidor esperando a cliente...\n");
                 socklen_t addr_len = sizeof(cli_addr);
+                //Acepta la conexión
                 if ( (n_sd = accept(sd, (struct sockaddr *) &cli_addr, &addr_len )) < 0) {
                     perror("accept");
                     close(n_sd);
@@ -74,22 +76,24 @@ int main(int argc, char * argv[]) {
                     close(n_sd);
                     close(sd);
                 }
-                //leemos la cadena
+                //leemos la cadena con la longitud recibida
                 if (read_n(n_sd, buffer, longitud) != longitud) {
-                    perror("read_n buffer");
-                    close(sd);
-                    close(n_sd);
-                    exit(1);
-                    buffer[longitud] = '\0';
-                    printf("fichero = %s\n", buffer);
-                }
-                //7.2.- abrimos el fichero
+                        perror("read_n buffer");
+                        close(sd);
+                        close(n_sd);
+                        exit(1);
+                    }
+                buffer[longitud] = '\0';
+                printf("fichero = %s\n", buffer);
+
+                //7.2.- creamos y abrimos el fichero conel nombre q se ha enviado
                 int fd;
                 if ((fd = open(buffer, O_WRONLY | O_CREAT | O_APPEND, 0644)) < 0) {
                     perror("open");
                     close(sd);
                     close(n_sd);
                 }
+                
                 printf("leyendo datos...\n");
                 //7.2.- Recibimos los números
                 leidos = read_n(n_sd, &dataBigEndian, sizeof(dataBigEndian));
