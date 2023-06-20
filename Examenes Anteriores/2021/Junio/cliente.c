@@ -83,30 +83,27 @@ int main(int argc, char* argv[]){
         exit(1);
     }
     write (sd,argv[3],strlen(argv[3])); //Todo Ok envio nombre del fichero
-    
-    do {
-       leidos= read(fd,b,T);
-            if (leidos>0){
-                printf("CLIENTE: Leo (%d)\n", leidos);
-                write(sd,&tipo_msg,sizeof(tipo_msg)); //Cabecera
-                long_msg=htons(leidos); //convierto a la red
-                write(sd,&long_msg,sizeof(long_msg)); //Cabecera
-                write(sd,b,leidos); //escribe el payload
-                if (nivel_seguridad==1){
-                    chkcli= resumen(b,leidos); //leidos local
-                    read(sd,&chksrv,sizeof(chksrv)); //lee del servidor
-                    chksrv=ntohl(chksrv); //convierte a local
-                    if (chksrv!=chkcli)
-                        printf("Valor incorrecto de la función resumen. Posible interceptación de los datos\n");
-                        close (fd);
-                        close (sd);
-                        exit(1);
+    while ((leidos= read(fd,b,T))>0){
+        printf("CLIENTE: Leo (%d)\n", leidos);
+        write(sd,&tipo_msg,sizeof(tipo_msg)); //Cabecera
+        long_msg=htons(leidos); //convierto a la red
+        write(sd,&long_msg,sizeof(long_msg)); //Cabecera
+        write(sd,b,leidos); //escribe el payload
+            if (nivel_seguridad==1){
+                chkcli= resumen(b,leidos); //leidos local
+                read(sd,&chksrv,sizeof(chksrv)); //lee del servidor
+                chksrv=ntohl(chksrv); //convierte a local
+                printf("CLIENTE: recibo chksrv (%u), calculo chkcli(%u)\n",chksrv,chkcli);
+                if (chksrv!=chkcli){
+                    printf("Valor incorrecto de la función resumen.\n");
+                    printf("Posible interceptación de los datos\n");
+                    close (fd);
+                    close (sd);
+                    exit(1);
                 }
-                
             }
-    } while (leidos>0);
+    }
     
-
     close (sd);
     printf("Todo cerrado ordenadamente\n");
 

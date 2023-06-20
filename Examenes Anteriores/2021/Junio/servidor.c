@@ -12,10 +12,14 @@
 #define PUERTO 4950
 #define T 255
 
+int sd;
+
 void salida(int s){
     //Ha llegado SIGINT finaliza de forma ordenada
+    close(sd);
     exit(0);
 }
+
 
 //Funciones auxiliares
 uint32_t resumen(char *b, int longitud){
@@ -32,7 +36,7 @@ int main(int argc, char* argv[]){
         exit(1);
     }
     uint8_t nivel_seguridad=atoi(argv[1]);
-    printf("Servidor corriendo en modo (%d)\n", nivel_seguridad);
+    
     if (signal(SIGINT, salida)<0){
         perror("SERVER: signal");
         exit(1);
@@ -49,7 +53,7 @@ int main(int argc, char* argv[]){
     d_serv.sin_addr.s_addr=INADDR_ANY; //admite cualquier dirección
 
     //2. Creo el socket
-    int sd, n_sd;
+    int n_sd;
     if ((sd=socket(PF_INET,SOCK_STREAM,0))<0){
         perror("SERVER: socket");
         exit(1);
@@ -65,6 +69,8 @@ int main(int argc, char* argv[]){
         exit(1);
     }
     //5. Espera conexión
+    while (1){
+    printf("Servidor (PID:%d) corriendo en modo (%d)\n", getpid(),nivel_seguridad);
     memset(&d_cli,0,sizeof(d_cli));
     if((n_sd = accept(sd,(struct sockaddr *)&d_cli, &tam_d_cli))<0){
         perror("SERVER: accept");
@@ -94,23 +100,24 @@ int main(int argc, char* argv[]){
     uint32_t chksrv;
     //Preparado para recibir los bloques del fichero
     do{
-    leidos=read(n_sd,&tipo_msg,sizeof(uint16_t));
-    printf("SERVER: Leidos (%d)\n", leidos);
-    tipo_msg=ntohs(tipo_msg);
-    leidos=read(n_sd,&long_msg,sizeof(uint16_t));
-    long_msg=ntohs(long_msg);
-    leidos=read(n_sd,payload,long_msg);
-        if (nivel_seguridad==1){
-            chksrv=resumen(payload,leidos);
-            chksrv=htonl(chksrv);
-            write(n_sd,&chksrv,sizeof(chksrv));
-        }
-    write(fd,payload,leidos);
+        leidos=read(n_sd,&tipo_msg,sizeof(uint16_t));
+        tipo_msg=ntohs(tipo_msg);
+        printf("SERVER: Leido tipo_msg (%d)=%d\n", leidos,tipo_msg);
+        leidos=read(n_sd,&long_msg,sizeof(uint16_t));
+        long_msg=ntohs(long_msg);
+        printf("SERVER: Leido long_msg (%d)=%d\n", leidos,long_msg);
+        leidos=read(n_sd,payload,long_msg);
+            if (nivel_seguridad==1){
+                chksrv=resumen(payload,leidos);
+                printf("SERVER: chksrv (%u)\n",chksrv);
+                chksrv=htonl(chksrv);
+                write(n_sd,&chksrv,sizeof(chksrv));
+            }
+        write(fd,payload,leidos);
     } while (leidos>0);
-    close (sd);
     close (n_sd);
     printf("Todo cerrado ordenadamente\n");
-
+    }
 
     return 0;
 }
