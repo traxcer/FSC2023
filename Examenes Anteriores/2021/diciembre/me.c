@@ -12,15 +12,20 @@
 #include<sys/stat.h>
 #include<fcntl.h>
 #include<string.h>
-#include<sys/select.h>>
-#include<signal.h>>
+#include<sys/select.h>
+#include<signal.h>
 
 //defino estados y eventos
 #define IDLE 0
 #define EJECUTANDO 1
 #define ESPERANDO 2
 
+#define CMD 0
+#define STOP 1
+#define CONT 2
+#define FIN 3
 
+#define T 255
 
 //funciones auxilares
 
@@ -44,6 +49,7 @@ int read_n(int fd, char* b,int n){
 int fd_fifo;
 int fin=0;
 int fd_pipe[2];
+char comando[T];
 
 void m_sigstop(int s){
     write(fd_pipe[1],"/stop",5);
@@ -61,40 +67,77 @@ void m_sigkill(int s){
 int espera_evento(){
 fd_set cjto,cjtotrab;
 FD_ZERO (&cjto);
-FD_SET(0,&cjto);
+FD_SET(fd_fifo,&cjto);
 FD_SET(fd_pipe[0],&cjto);
+int max_fd=fd_fifo>fd_pipe[0] ? fd_fifo:fd_pipe[0];
 
+memcpy(&cjtotrab,&cjto,sizeof(cjto));
+int r= select(max_fd+1,&cjtotrab,NULL, NULL, NULL);
+if(r<1){
+    perror("select");
+    exit(1);
+}
+    if (FD_ISSET(fd_fifo,&cjtotrab)){ //ha llegado un comando por teclado
+        char buffer[T];
+        int leidos=read(0,buffer,T-1);
+        buffer[leidos-1]='\0';
+        int tam = strlen(buffer);
+        if (strncmp("/cmd",buffer,4)){
+            //extraigo comando
+            memcpy(&comando,&buffer+5,tam-4);
+            comando[tam-3]='\0';
+            printf("comando:%s",comando);
+            return CMD;
+        }
+        if (strncmp("/stop",comando,5)){
+            return STOP;
+        }
+        if (strncmp("/cont",comando,5)){
+            return CONT;
+        }
+        if (strncmp("/fin",comando,5)){
+            return FIN;
+        }
+    }
+    if (FD_ISSET(fd_pipe[0],&cjtotrab)){
+        //
 
-
-
+    }
+return -1;
 }
 
 int main(){
     //Control de la señales
-    if(signal(SIGSTOP,m_sigstop)==SIG_ERR) {
-        perror("signal");
-        exit(1);
-        }
-    if(signal(SIGCONT,m_sigcont)==SIG_ERR) {
-        perror("signal");
-        exit(1);
-        }
-    if(signal(SIGKILL,m_sigkill)==SIG_ERR) {
-        perror("signal");
-        exit(1);
-        }
+        signal(SIGSTOP,m_sigstop);
+        signal(SIGCONT,m_sigcont);
+        signal(SIGKILL,m_sigkill);
+        
     fd_fifo=open("fsc_fifo", O_RDONLY);
     pipe(fd_pipe);
     
     int estado=IDLE;
     int evento;
+    int pid;
 
     while (fin==0){
-        evento=espera_evento;    
+        evento=espera_evento();    
         
         switch (estado) {
             case IDLE:
             /* code */
+            switch (evento) {
+                case CMD:
+                    //Ejecuta en un hijo un EXEC
+                    pid=fork();
+                        if (pid==0){
+
+                        }
+
+                break;
+            default:
+                fin=1;
+                break;
+            }
             break;
             case EJECUTANDO:
             /* code */
