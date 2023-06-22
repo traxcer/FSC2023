@@ -51,8 +51,9 @@ int main(){
     printf("Se ha conectado un cliente (IP:%s)\n",inet_ntoa(dir_client.sin_addr));
     //Proceso Iterativo
     uint8_t tipo_de_operacion, numero_de_operandos;
-    uint16_t operando;
     uint16_t operandos[T];
+    char b[T];
+    char *aux;
     struct respuestas{
         uint8_t tipo_de_respuesta;
         int32_t resultado;
@@ -62,18 +63,35 @@ int main(){
     while(1){
         printf("Esperando nueva operación...\n");
         //lee operación codificada con el formato OPERACION
-        leidos=read(n_sd,&tipo_de_operacion,sizeof(tipo_de_operacion)); //1 byte no necesita conversion
+        uint16_t tam_pack;
+        if((leidos=read(n_sd,&tam_pack,sizeof(u_int16_t)))<0){
+            perror("SERVER: read tam_pack");
+            exit(1);
+        }
+        tam_pack=ntohs(tam_pack);
+        printf("Leido (%d bytes de tam_pack)\n",tam_pack);
+        //leo la operacion empaquetada en b
+        if((leidos=read(n_sd,b,tam_pack))<0){
+            perror("SERVER: read");
+            exit(1);
+        }
         if (leidos==0){
             printf("Se ha cerrado el cliente\n");
             exit(1);
         }
-        printf("Recibido el siguiente tipo de operación: %d", tipo_de_operacion);
-        read(n_sd,&numero_de_operandos,sizeof(numero_de_operandos));//1 byte no necesita conversion
-        //leo los operandos
-        for (int i=0;i<numero_de_operandos;i++){
-            read(n_sd,&operando,sizeof(operando));
-            operandos[i]=ntohs(operando);
+        //desempaqueto
+        aux=b;
+        memcpy(&tipo_de_operacion,aux,sizeof(uint8_t));
+        aux+=sizeof(tipo_de_operacion);
+        printf("Tipo de operación: %d\n",tipo_de_operacion);
+        memcpy(&numero_de_operandos,aux,1);
+        aux+=sizeof(numero_de_operandos);
+        printf("Número de operandos: %d\n",numero_de_operandos);
+        for (int i=0;i<numero_de_operandos;i++){ //cargamos operandos
+            memcpy(operandos+i,aux,sizeof(uint16_t));
+            aux+=sizeof(uint16_t);
         }
+    
         //hacemos la operación
         if (tipo_de_operacion=='s'){
             //se trata de una suma

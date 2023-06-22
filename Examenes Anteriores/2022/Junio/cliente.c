@@ -65,6 +65,7 @@ int main(int argc, char *argv[]){
     uint16_t operandos[T];
     char operacion[T];
     char *aux;
+    int escrito;
     struct respuestas{
         uint8_t tipo_de_respuesta;
         int32_t resultado;
@@ -81,7 +82,7 @@ int main(int argc, char *argv[]){
             exit(1);
         }
         if (FD_ISSET(0,&cjtotrabajo)){
-            printf("Leyendo de teclado el tipo de operación (s/m)\n");
+            write(1,"Leyendo de teclado el tipo de operación (s/m), ",47);
             if((read(0,&tipop,2)) <0){
                 perror("read tipo");
                 close (sd);
@@ -93,7 +94,7 @@ int main(int argc, char *argv[]){
                 exit(1);
             }
             //ya tengo el tipo de operación
-            printf("Numero de operandos: \n");
+            write(1,"Numero de operandos: ",21);
             if((read(0,&nop,2))<0){
                 perror("read numoperandos");
                 close (sd);
@@ -102,7 +103,7 @@ int main(int argc, char *argv[]){
             numoperandos=atoi(&nop);
             printf("Leido (numop): %d\n",numoperandos);
             for(int i=0;i<numoperandos;i++){
-                printf("Introduzca operando (%d)\n",i+1);
+                printf("Introduzca operando (%d):",i+1);
                 if((read(0,&operandos[i],sizeof(uint16_t)+1))<0){
                     perror("read numoperandos");
                     close (sd);
@@ -112,27 +113,32 @@ int main(int argc, char *argv[]){
         
             //Envio petición al servidor
             aux=operacion;
-            memcpy(aux,&tipop, sizeof(uint8_t)); //al ser 1 byte no requiere hton
+            memcpy(aux,&tipop, sizeof(uint8_t)); 
             aux+= sizeof(uint8_t);
-            memcpy(aux,&numoperandos, sizeof(uint8_t)); //al ser 1 byte no requiere hton
+            memcpy(aux,&numoperandos, sizeof(uint8_t));
             aux+= sizeof(uint8_t);
             for(int i=0;i<numoperandos;i++){ //compacta operandos
-                operandos[i]=htons(operandos[i]);
                 memcpy(aux,&operandos[i], sizeof(uint16_t));
                 aux+=sizeof(uint16_t);
             } //fin del bucle for de operandos
 
-            int tam_pack=2*sizeof(uint8_t)+numoperandos*sizeof(uint16_t);
-            int escrito=write_n(sd, operacion,tam_pack);
+            //envio el tamaño
+            uint16_t tam_pack=2*sizeof(uint8_t)+numoperandos*sizeof(uint16_t);
+            uint16_t ntam_pack=htons(tam_pack);
+            escrito=write_n(sd, (char*) &ntam_pack, sizeof(uint16_t));
+            
+            //envio la operación
+            escrito=write_n(sd, operacion,tam_pack);
             if (escrito<0){
                 perror("write_n");
                 close (sd);
                 exit(1);
             } else 
-                printf("Escritos %d bytes al servidor\n",tam_pack);
+                printf("Escritos %d bytes al servidor\n",escrito);
             } //fin del if datos en teclado a leer
  
             if (FD_ISSET(sd,&cjtotrabajo)){
+                printf("He recibido algo del servidor\n");
                 read(sd,&respuesta.tipo_de_respuesta,sizeof(respuesta.tipo_de_respuesta));
                 read(sd,&respuesta.resultado,sizeof(respuesta.resultado));
                 respuesta.resultado=ntohl(respuesta.resultado);
