@@ -82,8 +82,9 @@ int main(){
         //desempaqueto
         aux=b;
         memcpy(&tipo_de_operacion,aux,sizeof(uint8_t));
+        printf("Tipo de operación: %c\n",tipo_de_operacion);
         aux+=sizeof(tipo_de_operacion);
-        printf("Tipo de operación: %d\n",tipo_de_operacion);
+        
         memcpy(&numero_de_operandos,aux,1);
         aux+=sizeof(numero_de_operandos);
         printf("Número de operandos: %d\n",numero_de_operandos);

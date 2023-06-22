@@ -63,9 +63,9 @@ int main(int argc, char *argv[]){
     char nop;
     uint8_t numoperandos;
     uint16_t operandos[T];
+    int escrito;
     char operacion[T];
     char *aux;
-    int escrito;
     struct respuestas{
         uint8_t tipo_de_respuesta;
         int32_t resultado;
@@ -100,10 +100,10 @@ int main(int argc, char *argv[]){
                 close (sd);
                 exit(1);
             }
-            numoperandos=atoi(&nop);
+            numoperandos=atoi(&nop); //transformo a entero
             printf("Leido (numop): %d\n",numoperandos);
             for(int i=0;i<numoperandos;i++){
-                printf("Introduzca operando (%d):",i+1);
+                printf("Introduzca operando (%d):\n",i+1);
                 if((read(0,&operandos[i],sizeof(uint16_t)+1))<0){
                     perror("read numoperandos");
                     close (sd);
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]){
                 }
             } //fin del bucle for de operandos
         
-            //Envio petición al servidor
+            //Envio empaqueto y envio petición al servidor
             aux=operacion;
             memcpy(aux,&tipop, sizeof(uint8_t)); 
             aux+= sizeof(uint8_t);
